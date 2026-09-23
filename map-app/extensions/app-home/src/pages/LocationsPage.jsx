@@ -1,7 +1,6 @@
 export default function LocationsPage() {
   return (
     <s-page heading="Locations">
-      <s-button slot="primary-action" variant="primary" href="https://distributor-map-app.onrender.com/locations">Open full location manager</s-button>
       <s-section heading="Retail network">
         <s-paragraph>Manage stores, retailers, stockists, distributors, and dealers for your storefront locator.</s-paragraph>
         <s-table>
