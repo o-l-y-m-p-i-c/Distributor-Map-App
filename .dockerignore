@@ -1,0 +1,9 @@
+.git
+.env
+.env.*
+!.env.example
+map-app/.git
+map-app/node_modules
+map-app/.next
+map-app/generated
+map-app/tsconfig.tsbuildinfo
