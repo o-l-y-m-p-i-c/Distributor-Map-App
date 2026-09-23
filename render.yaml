@@ -5,7 +5,6 @@ services:
     rootDir: map-app
     plan: starter
     buildCommand: npm ci && npm run generate && npm run build
-    preDeployCommand: npm run migrate:deploy
     startCommand: npm run start
     healthCheckPath: /api/health
     envVars:
