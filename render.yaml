@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: distributor-map-app
+    runtime: node
+    rootDir: map-app
+    plan: starter
+    buildCommand: npm ci && npm run generate && npm run build
+    preDeployCommand: npm run migrate:deploy
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: SHOPIFY_CLIENT_ID
+        sync: false
+      - key: SHOPIFY_SECRET
+        sync: false
+      - key: SHOPIFY_APP_URL
+        sync: false
+      - key: SCOPES
+        value: read_products
+      - key: SHOPIFY_WEBHOOK_SECRET
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_DATABASE_URL
+        sync: false
+      - key: MAP_STYLE_URL
+        value: https://tiles.openfreemap.org/styles/liberty
+      - key: GEOCODER_URL
+        value: https://nominatim.openstreetmap.org
+      - key: SESSION_SECRET
+        sync: false
+      - key: TOKEN_ENCRYPTION_KEY
+        sync: false
+      - key: APP_ENV
+        value: production
+      - key: RENDER_EXTERNAL_URL
+        sync: false

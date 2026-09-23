@@ -63,9 +63,15 @@ The implementation should either retain these names or introduce a documented mi
 ### External services
 
 - Shopify OAuth and Admin API for merchant identity, shop identification, product lookup, and lifecycle events.
-- Mapbox for maps, geocoding, reverse geocoding where required, and map tiles.
+- MapLibre GL JS for browser map rendering and clustering.
+- OpenStreetMap data with a free OSM-compatible tile/style provider such as OpenFreeMap for the initial deployment.
+- A free geocoding provider such as Nominatim or Photon, used only through the server with strict caching and rate limits.
 - Render for production web hosting.
 - Optional PostGIS adoption after baseline query patterns are confirmed; initial distance filtering can use indexed latitude/longitude bounds plus a server-side Haversine calculation.
+
+### Free map policy
+
+The first release must not require a paid Mapbox or Google Maps account. MapLibre is the rendering library; it does not provide tiles or geocoding itself. The app must use an OSM-compatible provider whose usage policy permits the expected traffic. Do not use the public `tile.openstreetmap.org` or public Nominatim service as an unlimited production backend. Cache geocoding results, identify the application with a proper User-Agent where required, and keep the tile/geocoder provider configurable so the app can move to a hosted or self-hosted OSM service when traffic grows.
 
 ### Tenant boundary
 
@@ -79,7 +85,7 @@ Every application-owned record is scoped to a `Shop`. The authenticated Shopify 
 
 1. Initialize a Shopify app using Shopify CLI with a TypeScript-compatible Next.js application structure.
 2. Configure the app URL, OAuth redirect URLs, embedded-app settings, scopes, and webhook subscriptions.
-3. Add TypeScript, ESLint, formatting, Zod, Prisma, Shopify API/App Bridge dependencies, Mapbox client dependencies, CSV parsing, and test tooling.
+3. Add TypeScript, ESLint, formatting, Zod, Prisma, Shopify API/App Bridge dependencies, MapLibre client dependencies, CSV parsing, and test tooling.
 4. Create the Theme App Extension with Shopify CLI.
 5. Add a Render service definition and development documentation.
 6. Update `env.example` with all required variables and safe placeholder values.
@@ -109,7 +115,7 @@ lib/
   auth/
   db/
   shopify/
-  mapbox/
+  map/
   security/
   validation/
 prisma/
@@ -148,7 +154,8 @@ SHOPIFY_WEBHOOK_SECRET=
 DATABASE_URL=
 DIRECT_DATABASE_URL=
 
-MAPBOX_ACCESS_TOKEN=
+MAP_STYLE_URL=https://tiles.openfreemap.org/styles/liberty
+GEOCODER_URL=https://nominatim.openstreetmap.org
 SESSION_SECRET=
 TOKEN_ENCRYPTION_KEY=
 
@@ -159,8 +166,9 @@ RENDER_EXTERNAL_URL=
 Implementation requirements:
 
 - Validate all required environment variables at startup with Zod.
-- Keep Mapbox server credentials server-side.
-- Use a restricted public Mapbox token only for browser map rendering if required; never expose a secret token.
+- Keep geocoding requests server-side; the browser receives only the MapLibre style URL and location data needed for rendering.
+- Do not require or expose a private map token in the initial free-map deployment.
+- Enforce provider attribution and usage policies for OpenStreetMap data, tiles, and geocoding.
 - Encrypt Shopify offline access tokens before writing them to PostgreSQL. Use a dedicated encryption key and authenticated encryption such as AES-GCM.
 - Do not use the webhook secret as the database encryption key.
 - Do not commit `.env`.
@@ -390,7 +398,7 @@ Sections:
 The editor must support:
 
 - Explicit `Locate address` geocoding action.
-- Draggable Mapbox marker.
+- Draggable MapLibre marker with visible OpenStreetMap attribution.
 - A manual-coordinate indicator.
 - No automatic overwrite of manually adjusted coordinates.
 - Product search using Shopify Admin API/resource picker.
@@ -400,7 +408,7 @@ The editor must support:
 
 ### Admin map
 
-- Mapbox map with server-loaded location data.
+- MapLibre map with server-loaded location data.
 - Marker clustering.
 - Popup summary.
 - Click marker to open location editor.
@@ -408,7 +416,7 @@ The editor must support:
 - Search and filters matching the location table.
 - Published/unpublished visibility filter.
 
-Avoid exposing an unrestricted Mapbox secret to the browser.
+Keep geocoding on the server and include required OpenStreetMap/provider attribution in the admin map.
 
 ### Settings
 
@@ -463,7 +471,7 @@ The storefront UI should include:
 - Do not send thousands of locations to the browser unnecessarily.
 - Use clustering for map display.
 
-Mapbox browser code must receive only the public token and required map data.
+MapLibre browser code receives the configured style URL, required location data, and visible OpenStreetMap/provider attribution; geocoding remains server-side.
 
 ---
 
@@ -589,7 +597,7 @@ Create `render.yaml` with:
 - Build command: install dependencies, generate Prisma client, and build Next.js.
 - Start command: run the production Next.js server.
 - Migration command: run Prisma migrations using `DIRECT_DATABASE_URL` before application startup/deploy.
-- Environment variable declarations for Shopify, Neon, Mapbox, encryption, and session configuration.
+- Environment variable declarations for Shopify, Neon, free map style/geocoder URLs, encryption, and session configuration.
 
 Production requirements:
 
@@ -657,7 +665,7 @@ Create `README.md` covering:
 - Neon project and branch setup.
 - Pooled vs direct database URLs.
 - Prisma migration commands.
-- Mapbox token setup and restrictions.
+- Free map provider setup, attribution, usage limits, and migration options.
 - Environment variables.
 - Local development commands.
 - Theme App Extension installation.
@@ -690,7 +698,7 @@ Create `README.md` covering:
 - Build embedded dashboard.
 - Build location table, filters, sorting, pagination, bulk actions, and editor.
 - Add product picker/search.
-- Add Mapbox geocoding and draggable marker.
+- Add server-side free geocoding and a MapLibre/OpenStreetMap draggable marker.
 - Add settings screen and admin map.
 
 ### Phase 4 — Storefront locator
@@ -712,7 +720,7 @@ Create `README.md` covering:
 - Complete integration and end-to-end tests.
 - Run security review for tenant isolation and token handling.
 - Load-test storefront search with large location sets.
-- Verify Mapbox token restrictions.
+- Verify free map provider attribution, rate limits, and usage-policy compliance.
 - Verify Render deployment and migrations.
 - Complete README and merchant setup instructions.
 
