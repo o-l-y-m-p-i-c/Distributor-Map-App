@@ -1,3 +1,7 @@
+/**
+ * @param {string} path
+ * @returns {string}
+ */
 const appUrl = (path) => {
   const host = new URLSearchParams(window.location.search).get('host');
   return `https://distributor-map-app.onrender.com${path}${host ? `?host=${encodeURIComponent(host)}` : ''}`;
