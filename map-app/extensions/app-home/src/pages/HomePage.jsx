@@ -1,12 +1,3 @@
-/**
- * @param {string} path
- * @returns {string}
- */
-const appUrl = (path) => {
-  const host = new URLSearchParams(window.location.search).get('host');
-  return `https://distributor-map-app.onrender.com${path}${host ? `?host=${encodeURIComponent(host)}` : ''}`;
-};
-
 export default function HomePage() {
   return (
     <s-page heading="Distributor Map">
@@ -18,12 +9,12 @@ export default function HomePage() {
           <s-box padding="base" background="subdued" border="base" borderRadius="base">
             <s-heading>Locations</s-heading>
             <s-paragraph>Add stores, stockists, distributors, and dealers.</s-paragraph>
-            <s-button href={appUrl('/locations')}>Open locations</s-button>
+            <s-button href="/locations">Open locations</s-button>
           </s-box>
           <s-box padding="base" background="subdued" border="base" borderRadius="base">
             <s-heading>Storefront locator</s-heading>
             <s-paragraph>Configure the map and add the Store Locator block to your theme.</s-paragraph>
-            <s-button href={appUrl('/settings')}>Open settings</s-button>
+            <s-button href="/settings">Open settings</s-button>
           </s-box>
         </s-grid>
       </s-section>
