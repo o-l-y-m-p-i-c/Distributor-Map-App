@@ -6,5 +6,16 @@
     "home": {
       "recommendationText": "Recommended Product!"
     }
+  },
+  "store_locator": {
+    "use_location": "Use my location",
+    "search_label": "Search locations",
+    "radius_label": "Search radius",
+    "search": "Search",
+    "locations": "locations",
+    "empty": "No locations found in this area.",
+    "error": "We could not load locations. Please try again.",
+    "map_loading": "Map will appear here",
+    "map_label": "Store locator map"
   }
 }
