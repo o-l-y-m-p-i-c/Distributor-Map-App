@@ -34,6 +34,7 @@
     const endpoint = root.dataset.endpoint;
     let map;
     let locations = [];
+    let markerNodes = [];
 
     if (!form || !list || !count || !status || !empty || !error || !mapContainer || !endpoint) return;
 
@@ -76,6 +77,15 @@
         properties: {id: String(location.id), name: location.name},
       }));
       source?.setData({type: 'FeatureCollection', features});
+      markerNodes.forEach((marker) => marker.remove());
+      markerNodes = nextLocations.filter((location) => location.longitude != null && location.latitude != null).map((location) => {
+        const element = document.createElement('button');
+        element.type = 'button';
+        element.className = 'dm-locator__marker';
+        element.setAttribute('aria-label', location.name);
+        element.addEventListener('click', () => selectLocation(location.id));
+        return new window.maplibregl.Marker({element}).setLngLat([Number(location.longitude), Number(location.latitude)]).addTo(map);
+      });
       if (center?.latitude != null && center?.longitude != null) {
         map.flyTo({center: [center.longitude, center.latitude], zoom: 10, essential: true});
       } else if (features.length) {

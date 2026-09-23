@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { authenticateAdminRequest, ShopifyAuthenticationError } from '@/lib/auth/shopify';
+import { geocodeAddress } from '@/lib/geo/geocode';
 import { prisma } from '@/lib/db/client';
 
 const createLocationSchema = z.object({
@@ -62,9 +63,23 @@ export async function POST(request: Request) {
   try {
     const { shop } = await authenticateAdminRequest(request);
     const input = createLocationSchema.parse(await request.json());
-    const coordinatesSource = input.latitude != null && input.longitude != null ? 'manual' : 'missing';
-    const location = await prisma.location.create({ data: { ...input, coordinatesSource, shopId: shop.id } });
-    return NextResponse.json({ location }, { status: 201 });
+    const hasCoordinates = input.latitude != null && input.longitude != null;
+    const location = await prisma.location.create({ data: { ...input, coordinatesSource: hasCoordinates ? 'manual' : 'missing', shopId: shop.id } });
+
+    if (!hasCoordinates) {
+      const address = [input.addressLine1, input.addressLine2, input.city, input.state, input.postalCode, input.country].filter(Boolean).join(', ');
+      try {
+        const geocoded = await geocodeAddress(address);
+        if (geocoded) {
+          const updated = await prisma.location.update({ where: { id: location.id }, data: { latitude: geocoded.latitude, longitude: geocoded.longitude, coordinatesSource: 'geocoded' } });
+          return NextResponse.json({ location: updated, geocoded: true }, { status: 201 });
+        }
+      } catch (geocodeError) {
+        console.error('Location geocoding failed after create', geocodeError);
+      }
+    }
+
+    return NextResponse.json({ location, geocoded: false }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) return jsonError('Invalid location data', 400);
     console.error('Admin locations POST failed', error);
