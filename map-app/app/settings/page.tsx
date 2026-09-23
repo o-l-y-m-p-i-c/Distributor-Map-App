@@ -1,9 +1,9 @@
-export default function SettingsPage() {
-  return (
-    <main className="shell">
-      <p className="eyebrow">Settings</p>
-      <h1>Store locator settings</h1>
-      <p className="hero-copy">Map, search, branding, and storefront visibility settings will be added here.</p>
-    </main>
-  );
+import {SettingsClient} from './SettingsClient';
+
+type SettingsPageProps = {searchParams: Promise<{host?: string | string[]}>};
+
+export default async function SettingsPage({searchParams}: SettingsPageProps) {
+  const params = await searchParams;
+  const host = Array.isArray(params.host) ? params.host[0] : params.host;
+  return <SettingsClient host={host ?? null} />;
 }

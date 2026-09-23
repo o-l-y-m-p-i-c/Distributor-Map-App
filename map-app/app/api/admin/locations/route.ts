@@ -1,7 +1,7 @@
-import {NextResponse} from 'next/server';
-import {z} from 'zod';
-import {authenticateAdminRequest} from '@/lib/auth/shopify';
-import {prisma} from '@/lib/db/client';
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
+import { authenticateAdminRequest } from '@/lib/auth/shopify';
+import { prisma } from '@/lib/db/client';
 
 const createLocationSchema = z.object({
   name: z.string().trim().min(1).max(160),
@@ -24,12 +24,12 @@ const createLocationSchema = z.object({
 });
 
 function jsonError(message: string, status: number) {
-  return NextResponse.json({error: message}, {status});
+  return NextResponse.json({ error: message }, { status });
 }
 
 export async function GET(request: Request) {
   try {
-    const {shop} = await authenticateAdminRequest(request);
+    const { shop } = await authenticateAdminRequest(request);
     const url = new URL(request.url);
     const page = Math.max(Number(url.searchParams.get('page') ?? 1), 1);
     const pageSize = Math.min(Math.max(Number(url.searchParams.get('pageSize') ?? 25), 1), 100);
@@ -37,21 +37,21 @@ export async function GET(request: Request) {
 
     const where = {
       shopId: shop.id,
-      ...(search ? {OR: [{name: {contains: search, mode: 'insensitive' as const}}, {city: {contains: search, mode: 'insensitive' as const}}]} : {}),
+      ...(search ? { OR: [{ name: { contains: search, mode: 'insensitive' as const } }, { city: { contains: search, mode: 'insensitive' as const } }] } : {}),
     };
 
     const [items, total] = await prisma.$transaction([
       prisma.location.findMany({
         where,
-        orderBy: {updatedAt: 'desc'},
+        orderBy: { updatedAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
-        select: {id: true, name: true, slug: true, city: true, country: true, type: true, published: true, latitude: true, longitude: true, updatedAt: true},
+        select: { id: true, name: true, slug: true, city: true, country: true, type: true, published: true, latitude: true, longitude: true, updatedAt: true },
       }),
-      prisma.location.count({where}),
+      prisma.location.count({ where }),
     ]);
 
-    return NextResponse.json({items, page, pageSize, total});
+    return NextResponse.json({ items, page, pageSize, total });
   } catch (error) {
     console.error('Admin locations GET failed', error);
     return jsonError('Unable to authenticate or load locations', 401);
@@ -60,10 +60,11 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const {shop} = await authenticateAdminRequest(request);
+    const { shop } = await authenticateAdminRequest(request);
     const input = createLocationSchema.parse(await request.json());
-    const location = await prisma.location.create({data: {...input, shopId: shop.id}});
-    return NextResponse.json({location}, {status: 201});
+    const coordinatesSource = input.latitude != null && input.longitude != null ? 'manual' : 'missing';
+    const location = await prisma.location.create({ data: { ...input, coordinatesSource, shopId: shop.id } });
+    return NextResponse.json({ location }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) return jsonError('Invalid location data', 400);
     console.error('Admin locations POST failed', error);

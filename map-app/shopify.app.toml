@@ -11,6 +11,10 @@ automatically_update_urls_on_dev = true
 [webhooks]
 api_version = "2026-07"
 
+[[webhooks.subscriptions]]
+topics = ["app/uninstalled", "products/delete"]
+uri = "/api/webhooks"
+
 [access.admin]
 direct_api_mode = "online"
 embedded_app_direct_api_access = true
@@ -26,5 +30,10 @@ redirect_urls = [ ]
 
 [sidekick]
 extensions_summary = "Manage retail locations, products, and storefront store locator settings."
+
+[app_proxy]
+url = "https://distributor-map-app.onrender.com/api/storefront"
+subpath = "distributor-map"
+prefix = "apps"
 
 

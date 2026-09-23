@@ -1,9 +1,11 @@
-export default function LocationsPage() {
-  return (
-    <main className="shell">
-      <p className="eyebrow">Locations</p>
-      <h1>Locations</h1>
-      <p className="hero-copy">The tenant-scoped location table will be implemented next.</p>
-    </main>
-  );
+import {LocationsClient} from './LocationsClient';
+
+type LocationsPageProps = {
+  searchParams: Promise<{host?: string | string[]}>;
+};
+
+export default async function LocationsPage({searchParams}: LocationsPageProps) {
+  const params = await searchParams;
+  const host = Array.isArray(params.host) ? params.host[0] : params.host;
+  return <LocationsClient host={host ?? null} />;
 }

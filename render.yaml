@@ -13,6 +13,8 @@ services:
         value: "22"
       - key: SHOPIFY_CLIENT_ID
         sync: false
+      - key: NEXT_PUBLIC_SHOPIFY_CLIENT_ID
+        sync: false
       - key: SHOPIFY_SECRET
         sync: false
       - key: SHOPIFY_APP_URL
