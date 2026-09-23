@@ -3,6 +3,7 @@ import {LocationProvider, Router, Route} from 'preact-iso';
 import HomePage from './pages/HomePage.jsx';
 import LocationsPage from './pages/LocationsPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
+import NewLocationPage from './pages/NewLocationPage.jsx';
 
 export default async () => {
   render(
@@ -15,6 +16,7 @@ export default async () => {
       <Router>
         <Route path="/" component={HomePage} />
         <Route path="/locations" component={LocationsPage} />
+        <Route path="/locations/new" component={NewLocationPage} />
         <Route path="/settings" component={SettingsPage} />
       </Router>
     </LocationProvider>,
