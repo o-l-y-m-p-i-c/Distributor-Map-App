@@ -18,9 +18,9 @@ export default function NewLocationPage() {
   /** @param {keyof LocationForm} field @param {string | boolean} value */
   const update = (field, value) => setForm((current) => ({...current, [field]: value}));
 
-  /** @param {SubmitEvent} event */
+  /** @param {Event} [event] */
   const submit = async (event) => {
-    event.preventDefault();
+    event?.preventDefault();
     setState({loading: true, error: '', success: false});
     try {
       const response = await fetchWithIdToken(apiUrl, {method: 'POST', headers: {'content-type': 'application/json', accept: 'application/json'}, body: JSON.stringify({...form, slug: form.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')})});
@@ -56,7 +56,7 @@ export default function NewLocationPage() {
             <s-option value="dealer">Dealer</s-option>
           </s-select>
           <s-checkbox label="Publish immediately" checked={form.published} onChange={(event) => update('published', event.currentTarget.checked)}></s-checkbox>
-          <s-button type="submit" variant="primary" loading={state.loading}>Create location</s-button>
+          <s-button type="button" variant="primary" loading={state.loading} onClick={() => void submit()}>Create location</s-button>
         </form>
       </s-section>
     </s-page>
