@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Shop {
+  id                  String          @id @default(cuid())
+  shopifyDomain       String          @unique
+  shopifyShopId       String          @unique
+  accessTokenEncrypted String
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  locations           Location[]
+  locationTypes       LocationType[]
+  tags                LocationTag[]
+  settings            Settings?
+
+  @@index([shopifyShopId])
+}
+
+model Location {
+  id             String                 @id @default(cuid())
+  shopId         String
+  name           String
+  slug           String
+  addressLine1   String
+  addressLine2   String?
+  city           String
+  state          String?
+  postalCode     String
+  country        String
+  countryCode    String
+  latitude       Decimal?               @db.Decimal(10, 7)
+  longitude      Decimal?               @db.Decimal(10, 7)
+  phone          String?
+  email          String?
+  website        String?
+  description    String?
+  type           String
+  published      Boolean                @default(false)
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  shop           Shop                   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  openingHours   OpeningHour[]
+  tagRelations   LocationTagRelation[]
+  products       LocationProduct[]
+
+  @@unique([shopId, slug])
+  @@index([shopId, published])
+  @@index([shopId, city])
+  @@index([shopId, countryCode])
+  @@index([shopId, type])
+  @@index([latitude, longitude])
+}
+
+model LocationType {
+  id        String   @id @default(cuid())
+  shopId    String
+  name      String
+  slug      String
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0)
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@unique([shopId, slug])
+  @@index([shopId, active])
+}
+
+model OpeningHour {
+  id         String   @id @default(cuid())
+  locationId String
+  dayOfWeek  Int
+  openTime   String?
+  closeTime  String?
+  closed     Boolean  @default(false)
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([locationId, dayOfWeek])
+}
+
+model LocationTag {
+  id          String                 @id @default(cuid())
+  shopId      String
+  name        String
+  slug        String
+  shop        Shop                   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  relations   LocationTagRelation[]
+
+  @@unique([shopId, slug])
+  @@index([shopId])
+}
+
+model LocationTagRelation {
+  locationId String
+  tagId      String
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  tag        LocationTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([locationId, tagId])
+  @@index([tagId])
+}
+
+model LocationProduct {
+  id                String   @id @default(cuid())
+  locationId        String
+  shopifyProductId  String
+  shopifyVariantId  String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  location          Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([locationId, shopifyProductId, shopifyVariantId])
+  @@index([shopifyProductId])
+}
+
+model Settings {
+  id                 String   @id @default(cuid())
+  shopId             String   @unique
+  mapProvider        String   @default("openfreemap")
+  defaultLatitude    Decimal? @db.Decimal(10, 7)
+  defaultLongitude   Decimal? @db.Decimal(10, 7)
+  defaultZoom        Float    @default(5)
+  searchRadius       Int      @default(50)
+  enableGeolocation  Boolean  @default(true)
+  showDirections     Boolean  @default(true)
+  showPhone          Boolean  @default(true)
+  showWebsite        Boolean  @default(true)
+  showOpeningHours   Boolean  @default(true)
+  mapStyle           String   @default("liberty")
+  markerStyle        String   @default("pin")
+  primaryColor       String   @default("#176274")
+  accentColor        String   @default("#4ca9ba")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  shop               Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+}
+
+model GeocodingCache {
+  id               String   @id @default(cuid())
+  addressHash      String
+  provider         String
+  latitude         Decimal  @db.Decimal(10, 7)
+  longitude        Decimal  @db.Decimal(10, 7)
+  formattedAddress String
+  rawResponse      Json
+  createdAt        DateTime @default(now())
+
+  @@unique([addressHash, provider])
+  @@index([addressHash])
+}

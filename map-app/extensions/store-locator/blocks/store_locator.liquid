@@ -1,0 +1,65 @@
+<section
+  class="dm-locator"
+  data-dm-locator
+  data-endpoint="/apps/distributor-map/api/storefront/search"
+  style="--dm-primary: {{ block.settings.primary_color }}; --dm-accent: {{ block.settings.accent_color }};"
+  {{ block.shopify_attributes }}
+>
+  <div class="dm-locator__header">
+    <div>
+      {% if block.settings.eyebrow != blank %}<p class="dm-locator__eyebrow">{{ block.settings.eyebrow | escape }}</p>{% endif %}
+      <h2>{{ block.settings.heading | escape }}</h2>
+      {% if block.settings.description != blank %}<p class="dm-locator__description">{{ block.settings.description | escape }}</p>{% endif %}
+    </div>
+    {% if block.settings.enable_geolocation %}
+      <button type="button" class="dm-locator__locate" data-dm-locate>{{ 'store_locator.use_location' | t }}</button>
+    {% endif %}
+  </div>
+
+  <form class="dm-locator__search" data-dm-search>
+    <label class="visually-hidden" for="dm-locator-query-{{ block.id }}">{{ 'store_locator.search_label' | t }}</label>
+    <input id="dm-locator-query-{{ block.id }}" type="search" name="q" placeholder="{{ block.settings.search_placeholder | escape }}" autocomplete="off">
+    <select name="radius" aria-label="{{ 'store_locator.radius_label' | t }}">
+      <option value="20">20 km</option>
+      <option value="50" selected>50 km</option>
+      <option value="100">100 km</option>
+      <option value="200">200 km</option>
+    </select>
+    <button type="submit">{{ 'store_locator.search' | t }}</button>
+  </form>
+
+  <div class="dm-locator__body">
+    <aside class="dm-locator__results" aria-live="polite">
+      <div class="dm-locator__results-head">
+        <strong data-dm-count>0 {{ 'store_locator.locations' | t }}</strong>
+        <span data-dm-status></span>
+      </div>
+      <div data-dm-list></div>
+      <p class="dm-locator__empty" data-dm-empty hidden>{{ 'store_locator.empty' | t }}</p>
+      <p class="dm-locator__error" data-dm-error hidden>{{ 'store_locator.error' | t }}</p>
+    </aside>
+    <div class="dm-locator__map" data-dm-map role="region" aria-label="{{ 'store_locator.map_label' | t }}">
+      <div class="dm-locator__map-placeholder">
+        <span>{{ 'store_locator.map_loading' | t }}</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Store locator",
+  "target": "section",
+  "stylesheet": "store-locator.css",
+  "javascript": "store-locator.js",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "FIND US" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Find a distributor near you" },
+    { "type": "textarea", "id": "description", "label": "Description", "default": "Search our retail network and discover where to find PickAqua." },
+    { "type": "text", "id": "search_placeholder", "label": "Search placeholder", "default": "City, postcode, or address" },
+    { "type": "checkbox", "id": "enable_geolocation", "label": "Show use location button", "default": true },
+    { "type": "color", "id": "primary_color", "label": "Primary color", "default": "#176274" },
+    { "type": "color", "id": "accent_color", "label": "Accent color", "default": "#4ca9ba" }
+  ]
+}
+{% endschema %}
