@@ -1,10 +1,12 @@
-import {decodeJwt, jwtVerify, type JWTPayload} from 'jose';
-import {prisma} from '@/lib/db/client';
-import {getEnv} from '@/lib/config/env';
-import {encryptAccessToken} from '@/lib/security/token-encryption';
+import { decodeJwt, jwtVerify, type JWTPayload } from 'jose';
+import { prisma } from '@/lib/db/client';
+import { getEnv } from '@/lib/config/env';
+import { encryptAccessToken } from '@/lib/security/token-encryption';
 
 const shopifyApiVersion = '2026-07';
 const shopDomainPattern = /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
+
+export class ShopifyAuthenticationError extends Error { }
 
 type ShopifyIdToken = JWTPayload & {
   dest?: string;
@@ -19,16 +21,16 @@ type TokenExchangeResponse = {
 function getBearerToken(request: Request) {
   const authorization = request.headers.get('authorization');
   if (!authorization?.startsWith('Bearer ')) {
-    throw new Error('Missing Shopify ID token');
+    throw new ShopifyAuthenticationError('Missing Shopify ID token');
   }
   return authorization.slice('Bearer '.length).trim();
 }
 
 function getShopDomain(payload: ShopifyIdToken) {
-  if (!payload.dest) throw new Error('Shopify ID token has no destination');
+  if (!payload.dest) throw new ShopifyAuthenticationError('Shopify ID token has no destination');
   const destination = new URL(payload.dest);
   if (!shopDomainPattern.test(destination.hostname)) {
-    throw new Error('Invalid Shopify shop domain');
+    throw new ShopifyAuthenticationError('Invalid Shopify shop domain');
   }
   return destination.hostname;
 }
@@ -39,34 +41,37 @@ async function verifyIdToken(token: string) {
   const shopDomain = getShopDomain(unverified);
   const issuer = `https://${shopDomain}/admin`;
 
-  const {payload} = await jwtVerify(
-    token,
-    new TextEncoder().encode(env.SHOPIFY_SECRET),
-    {audience: env.SHOPIFY_CLIENT_ID, issuer, clockTolerance: 5},
-  );
-
-  return {shopDomain, payload: payload as ShopifyIdToken};
+  try {
+    const { payload } = await jwtVerify(
+      token,
+      new TextEncoder().encode(env.SHOPIFY_SECRET),
+      { audience: env.SHOPIFY_CLIENT_ID, issuer, clockTolerance: 5 },
+    );
+    return { shopDomain, payload: payload as ShopifyIdToken };
+  } catch {
+    throw new ShopifyAuthenticationError('Invalid Shopify ID token');
+  }
 }
 
 async function exchangeIdToken(shopDomain: string, idToken: string) {
   const env = getEnv();
-  const body = new URLSearchParams({
-    client_id: env.SHOPIFY_CLIENT_ID,
-    client_secret: env.SHOPIFY_SECRET,
-    grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-    assertion: idToken,
-  });
-
   const response = await fetch(`https://${shopDomain}/admin/oauth/access_token`, {
     method: 'POST',
-    headers: {'content-type': 'application/x-www-form-urlencoded'},
-    body,
+    headers: { 'content-type': 'application/json', accept: 'application/json' },
+    body: JSON.stringify({
+      client_id: env.SHOPIFY_CLIENT_ID,
+      client_secret: env.SHOPIFY_SECRET,
+      grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
+      subject_token: idToken,
+      subject_token_type: 'urn:ietf:params:oauth:token-type:id_token',
+      requested_token_type: 'urn:shopify:params:oauth:token-type:offline-access-token',
+    }),
     cache: 'no-store',
   });
 
-  if (!response.ok) throw new Error(`Shopify token exchange failed (${response.status})`);
+  if (!response.ok) throw new ShopifyAuthenticationError(`Shopify token exchange failed (${response.status})`);
   const result = (await response.json()) as TokenExchangeResponse;
-  if (!result.access_token) throw new Error('Shopify token exchange returned no token');
+  if (!result.access_token) throw new ShopifyAuthenticationError('Shopify token exchange returned no token');
   return result.access_token;
 }
 
@@ -77,24 +82,24 @@ async function getShopifyShopId(shopDomain: string, accessToken: string) {
       'content-type': 'application/json',
       'x-shopify-access-token': accessToken,
     },
-    body: JSON.stringify({query: 'query { shop { id } }'}),
+    body: JSON.stringify({ query: 'query { shop { id } }' }),
     cache: 'no-store',
   });
 
-  if (!response.ok) throw new Error(`Shopify shop lookup failed (${response.status})`);
-  const result = (await response.json()) as {data?: {shop?: {id?: string}}};
+  if (!response.ok) throw new ShopifyAuthenticationError(`Shopify shop lookup failed (${response.status})`);
+  const result = (await response.json()) as { data?: { shop?: { id?: string } } };
   if (!result.data?.shop?.id) throw new Error('Shopify shop lookup returned no ID');
   return result.data.shop.id;
 }
 
 export async function authenticateAdminRequest(request: Request) {
   const idToken = getBearerToken(request);
-  const {shopDomain, payload} = await verifyIdToken(idToken);
+  const { shopDomain, payload } = await verifyIdToken(idToken);
   const accessToken = await exchangeIdToken(shopDomain, idToken);
   const shopifyShopId = await getShopifyShopId(shopDomain, accessToken);
 
   const shop = await prisma.shop.upsert({
-    where: {shopifyDomain: shopDomain},
+    where: { shopifyDomain: shopDomain },
     create: {
       shopifyDomain: shopDomain,
       shopifyShopId,
@@ -106,5 +111,5 @@ export async function authenticateAdminRequest(request: Request) {
     },
   });
 
-  return {shop, shopifyUserId: payload.sub ?? null};
+  return { shop, shopifyUserId: payload.sub ?? null };
 }

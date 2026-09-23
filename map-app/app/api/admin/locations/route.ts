@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { authenticateAdminRequest } from '@/lib/auth/shopify';
+import { authenticateAdminRequest, ShopifyAuthenticationError } from '@/lib/auth/shopify';
 import { prisma } from '@/lib/db/client';
 
 const createLocationSchema = z.object({
@@ -54,7 +54,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ items, page, pageSize, total });
   } catch (error) {
     console.error('Admin locations GET failed', error);
-    return jsonError('Unable to authenticate or load locations', 401);
+    return jsonError('Unable to authenticate or load locations', error instanceof ShopifyAuthenticationError ? 401 : 500);
   }
 }
 
@@ -68,6 +68,6 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof z.ZodError) return jsonError('Invalid location data', 400);
     console.error('Admin locations POST failed', error);
-    return jsonError('Unable to authenticate or create location', 401);
+    return jsonError('Unable to authenticate or create location', error instanceof ShopifyAuthenticationError ? 401 : 500);
   }
 }
