@@ -2,6 +2,13 @@ import {useEffect, useState} from 'preact/hooks';
 
 const apiUrl = 'https://distributor-map-app.onrender.com/api/admin/locations';
 
+/** @param {string} url @param {RequestInit} [options] */
+const fetchWithIdToken = async (url, options = {}) => {
+  const token = await shopify.auth.idToken();
+  if (!token) throw new Error('Shopify authentication token unavailable');
+  return fetch(url, {...options, headers: {...options.headers, Authorization: `Bearer ${token}`}});
+};
+
 /** @typedef {{id: string, name: string, city: string, country: string, type: string, published: boolean}} Location */
 /** @typedef {{items?: Location[]}} LocationResponse */
 
@@ -11,7 +18,7 @@ export default function LocationsPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetch(apiUrl, {headers: {accept: 'application/json'}})
+    fetchWithIdToken(apiUrl, {headers: {accept: 'application/json'}})
       .then(async (response) => {
         if (!response.ok) throw new Error(`Request failed (${response.status})`);
         return response.json();

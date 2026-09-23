@@ -2,6 +2,13 @@ import {useState} from 'preact/hooks';
 
 const apiUrl = 'https://distributor-map-app.onrender.com/api/admin/locations';
 
+/** @param {string} url @param {RequestInit} [options] */
+const fetchWithIdToken = async (url, options = {}) => {
+  const token = await shopify.auth.idToken();
+  if (!token) throw new Error('Shopify authentication token unavailable');
+  return fetch(url, {...options, headers: {...options.headers, Authorization: `Bearer ${token}`}});
+};
+
 /** @typedef {{name: string, addressLine1: string, city: string, postalCode: string, country: string, countryCode: string, type: string, published: boolean}} LocationForm */
 
 export default function NewLocationPage() {
@@ -16,7 +23,7 @@ export default function NewLocationPage() {
     event.preventDefault();
     setState({loading: true, error: '', success: false});
     try {
-      const response = await fetch(apiUrl, {method: 'POST', headers: {'content-type': 'application/json', accept: 'application/json'}, body: JSON.stringify({...form, slug: form.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')})});
+      const response = await fetchWithIdToken(apiUrl, {method: 'POST', headers: {'content-type': 'application/json', accept: 'application/json'}, body: JSON.stringify({...form, slug: form.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')})});
       if (!response.ok) throw new Error(`Request failed (${response.status})`);
       setState({loading: false, error: '', success: true});
       setForm({name: '', addressLine1: '', city: '', postalCode: '', country: '', countryCode: '', type: 'store', published: false});
