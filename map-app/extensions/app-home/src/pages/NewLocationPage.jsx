@@ -2,12 +2,16 @@ import {useState} from 'preact/hooks';
 
 const apiUrl = 'https://distributor-map-app.onrender.com/api/admin/locations';
 
+/** @typedef {{name: string, addressLine1: string, city: string, postalCode: string, country: string, countryCode: string, type: string, published: boolean}} LocationForm */
+
 export default function NewLocationPage() {
   const [form, setForm] = useState({name: '', addressLine1: '', city: '', postalCode: '', country: '', countryCode: '', type: 'store', published: false});
   const [state, setState] = useState({loading: false, error: '', success: false});
 
+  /** @param {keyof LocationForm} field @param {string | boolean} value */
   const update = (field, value) => setForm((current) => ({...current, [field]: value}));
 
+  /** @param {SubmitEvent} event */
   const submit = async (event) => {
     event.preventDefault();
     setState({loading: true, error: '', success: false});
@@ -17,7 +21,7 @@ export default function NewLocationPage() {
       setState({loading: false, error: '', success: true});
       setForm({name: '', addressLine1: '', city: '', postalCode: '', country: '', countryCode: '', type: 'store', published: false});
     } catch (error) {
-      setState({loading: false, error: error.message || 'Unable to create location', success: false});
+      setState({loading: false, error: error instanceof Error ? error.message : 'Unable to create location', success: false});
     }
   };
 

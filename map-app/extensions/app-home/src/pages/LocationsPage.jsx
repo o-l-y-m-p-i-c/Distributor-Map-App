@@ -2,8 +2,11 @@ import {useEffect, useState} from 'preact/hooks';
 
 const apiUrl = 'https://distributor-map-app.onrender.com/api/admin/locations';
 
+/** @typedef {{id: string, name: string, city: string, country: string, type: string, published: boolean}} Location */
+/** @typedef {{items?: Location[]}} LocationResponse */
+
 export default function LocationsPage() {
-  const [locations, setLocations] = useState([]);
+  const [locations, setLocations] = useState(/** @type {Location[]} */ ([]));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -13,8 +16,8 @@ export default function LocationsPage() {
         if (!response.ok) throw new Error(`Request failed (${response.status})`);
         return response.json();
       })
-      .then((payload) => setLocations(payload.items ?? []))
-      .catch((requestError) => setError(requestError.message || 'Unable to load locations'))
+      .then(/** @param {LocationResponse} payload */ (payload) => setLocations(payload.items ?? []))
+      .catch((requestError) => setError(requestError instanceof Error ? requestError.message : 'Unable to load locations'))
       .finally(() => setLoading(false));
   }, []);
 
