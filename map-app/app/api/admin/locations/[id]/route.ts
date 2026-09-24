@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { authenticateAdminRequest } from '@/lib/auth/shopify';
+import { geocodeAddress } from '@/lib/geo/geocode';
 import { prisma } from '@/lib/db/client';
 
 const locationUpdateSchema = z.object({
@@ -19,6 +20,8 @@ const locationUpdateSchema = z.object({
   email: z.string().email().max(254).nullable().optional(),
   website: z.string().url().max(2048).nullable().optional(),
   description: z.string().trim().max(5000).nullable().optional(),
+  imageUrl: z.string().url().max(2048).nullable().optional(),
+  buttonUrl: z.string().url().max(2048).nullable().optional(),
   type: z.string().trim().min(1).max(80).optional(),
   published: z.boolean().optional(),
 });
@@ -50,7 +53,20 @@ export async function PUT(request: Request, { params }: RouteContext) {
     const existing = await prisma.location.findFirst({ where: { id, shopId: shop.id }, select: { id: true } });
     if (!existing) return errorResponse('Location not found', 404);
     const data = { ...input, ...(input.latitude !== undefined || input.longitude !== undefined ? { coordinatesSource: 'manual' } : {}) };
-    const location = await prisma.location.update({ where: { id }, data });
+    let location = await prisma.location.update({ where: { id }, data });
+
+    if (location.latitude == null || location.longitude == null) {
+      const address = [location.addressLine1, location.addressLine2, location.city, location.state, location.postalCode, location.country].filter(Boolean).join(', ');
+      try {
+        const geocoded = await geocodeAddress(address);
+        if (geocoded) {
+          location = await prisma.location.update({ where: { id }, data: { latitude: geocoded.latitude, longitude: geocoded.longitude, coordinatesSource: 'geocoded' } });
+        }
+      } catch (geocodeError) {
+        console.error('Location geocoding failed after update', geocodeError);
+      }
+    }
+
     return NextResponse.json({ location });
   } catch (error) {
     if (error instanceof z.ZodError) return errorResponse('Invalid location data', 400);

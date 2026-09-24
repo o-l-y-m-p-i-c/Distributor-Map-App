@@ -42,6 +42,55 @@
       '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;',
     }[character]));
 
+    const modal = document.createElement('div');
+    modal.className = 'dm-locator__modal';
+    modal.hidden = true;
+    modal.innerHTML = `
+      <div class="dm-locator__modal-backdrop" data-dm-modal-close></div>
+      <div class="dm-locator__modal-card" role="dialog" aria-modal="true">
+        <button type="button" class="dm-locator__modal-close" data-dm-modal-close aria-label="Close">&#215;</button>
+        <div data-dm-modal-body></div>
+      </div>`;
+    root.appendChild(modal);
+    const modalBody = modal.querySelector('[data-dm-modal-body]');
+
+    const closeModal = () => { modal.hidden = true; };
+    modal.addEventListener('click', (event) => {
+      if (event.target.closest('[data-dm-modal-close]')) closeModal();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeModal();
+    });
+
+    const addressOf = (location) => [location.addressLine1, location.city, location.state, location.postalCode, location.country].filter(Boolean).join(', ');
+
+    const directionsUrl = (location) => {
+      if (location.buttonUrl) return location.buttonUrl;
+      if (location.latitude != null && location.longitude != null) {
+        return `https://www.google.com/maps/dir/?api=1&destination=${Number(location.latitude)},${Number(location.longitude)}`;
+      }
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressOf(location))}`;
+    };
+
+    const openModal = (location) => {
+      const address = addressOf(location);
+      modalBody.innerHTML = `
+        ${location.imageUrl ? `<img class="dm-locator__modal-image" src="${escapeHtml(location.imageUrl)}" alt="${escapeHtml(location.name)}" loading="lazy">` : ''}
+        <div class="dm-locator__modal-content">
+          ${location.type ? `<span class="dm-locator__modal-type">${escapeHtml(location.type)}</span>` : ''}
+          <h3 class="dm-locator__modal-title">${escapeHtml(location.name)}</h3>
+          ${location.description ? `<p class="dm-locator__modal-description">${escapeHtml(location.description)}</p>` : ''}
+          ${address ? `<address class="dm-locator__modal-address">${escapeHtml(address)}</address>` : ''}
+          <div class="dm-locator__modal-meta">
+            ${location.phone ? `<a href="tel:${escapeHtml(location.phone)}">${escapeHtml(location.phone)}</a>` : ''}
+            ${location.email ? `<a href="mailto:${escapeHtml(location.email)}">${escapeHtml(location.email)}</a>` : ''}
+            ${location.website ? `<a href="${escapeHtml(location.website)}" target="_blank" rel="noopener noreferrer">Website</a>` : ''}
+          </div>
+          <a class="dm-locator__modal-directions" href="${escapeHtml(directionsUrl(location))}" target="_blank" rel="noopener noreferrer">Get directions</a>
+        </div>`;
+      modal.hidden = false;
+    };
+
     const selectLocation = (id) => {
       list.querySelectorAll('.is-active').forEach((item) => item.classList.remove('is-active'));
       const card = list.querySelector(`[data-dm-location="${CSS.escape(id)}"]`);
@@ -50,6 +99,7 @@
       if (map && location?.longitude != null && location?.latitude != null) {
         map.flyTo({center: [Number(location.longitude), Number(location.latitude)], zoom: 13, essential: true});
       }
+      if (location) openModal(location);
     };
 
     const render = (nextLocations) => {

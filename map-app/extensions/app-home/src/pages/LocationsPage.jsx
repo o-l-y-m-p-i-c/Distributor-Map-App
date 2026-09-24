@@ -31,6 +31,7 @@ export default function LocationsPage() {
   return (
     <s-page heading="Locations">
       <s-button slot="primary-action" variant="primary" href="/locations/new">Add location</s-button>
+      <s-button slot="secondary-actions" href="/locations/import">Import CSV</s-button>
       <s-section heading="Retail network">
         <s-paragraph>Manage stores, retailers, stockists, distributors, and dealers for your storefront locator.</s-paragraph>
         {loading && <s-spinner accessibilityLabel="Loading locations" />}
@@ -43,6 +44,7 @@ export default function LocationsPage() {
               <s-table-header>City</s-table-header>
               <s-table-header>Type</s-table-header>
               <s-table-header>Status</s-table-header>
+              <s-table-header>Actions</s-table-header>
             </s-table-header-row>
             <s-table-body>
               {locations.map((location) => (
@@ -51,6 +53,7 @@ export default function LocationsPage() {
                   <s-table-cell>{location.city}, {location.country}</s-table-cell>
                   <s-table-cell>{location.type}</s-table-cell>
                   <s-table-cell><s-badge tone={location.published ? 'success' : 'neutral'}>{location.published ? 'Published' : 'Draft'}</s-badge></s-table-cell>
+                  <s-table-cell><s-link href={`/locations/edit/${location.id}`}>Edit</s-link></s-table-cell>
                 </s-table-row>
               ))}
             </s-table-body>
