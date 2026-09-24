@@ -283,10 +283,14 @@
     };
 
     // Hide DOM markers whose point is grouped inside a cluster — the animated
-    // marker stays only for unclustered points.
+    // marker stays only for unclustered points. Uses the clustered source data
+    // (not rendered pixels) so opacity doesn't matter. Never hides everything:
+    // an empty result means tiles are not processed yet.
     const syncMarkers = () => {
-      if (!map?.getLayer('dm-points')) return;
-      const unclustered = new Set(map.queryRenderedFeatures({layers: ['dm-points']}).map((feature) => String(feature.properties.id)));
+      if (!map?.getSource('dm-locations')) return;
+      const features = map.querySourceFeatures('dm-locations');
+      if (!features.length) return;
+      const unclustered = new Set(features.filter((feature) => !feature.properties.point_count).map((feature) => String(feature.properties.id)));
       markerNodes.forEach((node) => { node.element.style.display = unclustered.has(node.id) ? '' : 'none'; });
     };
 
@@ -306,6 +310,8 @@
           updateMap(locations);
         });
         map.on('idle', syncMarkers);
+        map.on('moveend', syncMarkers);
+        map.on('sourcedata', syncMarkers);
         map.on('click', 'dm-clusters', (event) => {
           const feature = map.queryRenderedFeatures(event.point, {layers: ['dm-clusters']})[0];
           map.getSource('dm-locations').getClusterExpansionZoom(feature.properties.cluster_id, (err, zoom) => {
