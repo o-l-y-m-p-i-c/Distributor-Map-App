@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { authenticateAdminRequest } from '@/lib/auth/shopify';
 
 const rowSchema = z.object({
-  name: z.string().trim().min(1), address: z.string().trim().min(1), city: z.string().trim().min(1), postal_code: z.string().trim().min(1), country: z.string().trim().min(1),
+  name: z.string().trim().min(1), address: z.string().trim().min(1), city: z.string().trim().min(1), postal_code: z.string().trim().min(1), country: z.string().trim().min(1), country_code: z.string().optional().default(''),
   address2: z.string().optional().default(''), state: z.string().optional().default(''), latitude: z.string().optional().default(''), longitude: z.string().optional().default(''), phone: z.string().optional().default(''), phones: z.string().optional().default(''), email: z.string().optional().default(''), emails: z.string().optional().default(''), website: z.string().optional().default(''), websites: z.string().optional().default(''), type: z.string().optional().default('store'), description: z.string().optional().default(''), image_url: z.string().optional().default(''), image_urls: z.string().optional().default(''), button_url: z.string().optional().default(''), published: z.string().optional().default(''),
 });
 

@@ -1,6 +1,6 @@
-name,address,address2,city,state,postal_code,country,latitude,longitude,phone,phones,email,emails,website,websites,type,description,image_url,image_urls,button_url,published
-Riga Flagship Store,Brīvības iela 40,,Rīga,,LV-1010,Latvia,56.9500,24.1050,+371 20000001,+371 20000011|+371 20000012,riga@example.com,sales@example.com|info@example.com,https://example.com/riga,https://riga-shop.example.com,store,Main retail store in central Riga,,,true
-Cēsis Distributor,Rīgas iela 7,,Cēsis,,LV-4101,Latvia,57.3119,25.2749,+371 20000002,,cesis@example.com,,https://example.com/cesis,,distributor,Regional distributor for Vidzeme,,,true
-Liepāja Partner Shop,Kuršu iela 12,,Liepāja,,LV-3401,Latvia,56.5047,21.0108,+371 20000003,,liepaja@example.com,,,,retailer,Partner shop near the port,,,false
-Daugavpils Warehouse,Rīgas iela 105,,Daugavpils,,LV-5401,Latvia,55.8747,26.5362,+371 20000004,,,,,,dealer,Wholesale dealer for Latgale region,,,true
-Jūrmala Stockist,Jomas iela 45,,Jūrmala,,LV-2015,Latvia,56.9714,23.7798,+371 20000005,,jurmala@example.com,,https://example.com/jurmala,,stockist,Seasonal stockist on the promenade,,,true
+name,address,address2,city,state,postal_code,country,country_code,latitude,longitude,phone,phones,email,emails,website,websites,type,description,image_url,image_urls,button_url,published
+Riga Flagship Store,Brīvības iela 40,,Rīga,,LV-1010,Latvia,LV,56.9500,24.1050,+371 20000001,+371 20000011|+371 20000012,riga@example.com,sales@example.com|info@example.com,https://example.com/riga,https://riga-shop.example.com,store,Main retail store in central Riga,,,,true
+Cēsis Distributor,Rīgas iela 7,,Cēsis,,LV-4101,Latvia,LV,57.3119,25.2749,+371 20000002,,cesis@example.com,,https://example.com/cesis,,distributor,Regional distributor for Vidzeme,,,,true
+Liepāja Partner Shop,Kuršu iela 12,,Liepāja,,LV-3401,Latvia,LV,56.5047,21.0108,+371 20000003,,liepaja@example.com,,,,retailer,Partner shop near the port,,,,false
+Daugavpils Warehouse,Rīgas iela 105,,Daugavpils,,LV-5401,Latvia,LV,55.8747,26.5362,+371 20000004,,,,,,dealer,Wholesale dealer for Latgale region,,,,true
+Jūrmala Stockist,Jomas iela 45,,Jūrmala,,LV-2015,Latvia,LV,56.9714,23.7798,+371 20000005,,jurmala@example.com,,https://example.com/jurmala,,stockist,Seasonal stockist on the promenade,,,,true
