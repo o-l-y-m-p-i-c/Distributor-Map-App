@@ -109,22 +109,37 @@
       if (map && location?.longitude != null && location?.latitude != null) {
         map.flyTo({center: [Number(location.longitude), Number(location.latitude)], zoom: 13, essential: true});
       }
+      return location;
+    };
+
+    const openLocationModal = (id) => {
+      const location = selectLocation(id);
       if (location) openModal(location);
     };
 
     const render = (nextLocations) => {
       locations = nextLocations;
       list.innerHTML = locations.map((location) => `
-        <button class="dm-locator__card" type="button" data-dm-location="${escapeHtml(location.id)}">
+        <div class="dm-locator__card" role="button" tabindex="0" data-dm-location="${escapeHtml(location.id)}">
           <strong>${escapeHtml(location.name)}</strong>
           <address>${escapeHtml([location.addressLine1, location.city, location.country].filter(Boolean).join(', '))}</address>
           ${location.distanceKilometers != null ? `<span class="dm-locator__distance">${Number(location.distanceKilometers).toFixed(1)} km away</span>` : ''}
-        </button>
+          <button type="button" class="dm-locator__details" data-dm-details="${escapeHtml(location.id)}">View details</button>
+        </div>
       `).join('');
       count.textContent = `${locations.length} ${locations.length === 1 ? 'location' : 'locations'}`;
       empty.hidden = locations.length > 0;
       list.querySelectorAll('[data-dm-location]').forEach((card) => {
         card.addEventListener('click', () => selectLocation(card.dataset.dmLocation));
+        card.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectLocation(card.dataset.dmLocation); }
+        });
+      });
+      list.querySelectorAll('[data-dm-details]').forEach((button) => {
+        button.addEventListener('click', (event) => {
+          event.stopPropagation();
+          openLocationModal(button.dataset.dmDetails);
+        });
       });
     };
 
@@ -143,7 +158,7 @@
         element.type = 'button';
         element.className = 'dm-locator__marker';
         element.setAttribute('aria-label', location.name);
-        element.addEventListener('click', () => selectLocation(location.id));
+        element.addEventListener('click', () => openLocationModal(location.id));
         return new window.maplibregl.Marker({element}).setLngLat([Number(location.longitude), Number(location.latitude)]).addTo(map);
       });
       if (center?.latitude != null && center?.longitude != null) {
@@ -172,7 +187,7 @@
             if (!err) map.easeTo({center: feature.geometry.coordinates, zoom});
           });
         });
-        map.on('click', 'dm-points', (event) => selectLocation(event.features[0].properties.id));
+        map.on('click', 'dm-points', (event) => openLocationModal(event.features[0].properties.id));
         map.on('mouseenter', 'dm-clusters', () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', 'dm-clusters', () => { map.getCanvas().style.cursor = ''; });
         map.on('mouseenter', 'dm-points', () => { map.getCanvas().style.cursor = 'pointer'; });
