@@ -6,9 +6,9 @@ import {useState} from 'preact/hooks';
  * @property {string} description
  * @property {string[]} imageUrls
  * @property {string} buttonUrl
- * @property {string} phone
- * @property {string} email
- * @property {string} website
+ * @property {string[]} phones
+ * @property {string[]} emails
+ * @property {string[]} websites
  * @property {string} addressLine1
  * @property {string} city
  * @property {string} postalCode
@@ -21,22 +21,26 @@ import {useState} from 'preact/hooks';
 /** @typedef {{id: string, url: string, alt: string}} LibraryImage */
 
 /** @returns {LocationFormValues} */
-export const createEmptyForm = () => ({
-  name: '',
-  description: '',
-  imageUrls: [],
-  buttonUrl: '',
-  phone: '',
-  email: '',
-  website: '',
-  addressLine1: '',
-  city: '',
-  postalCode: '',
-  country: '',
-  countryCode: '',
-  type: 'store',
-  published: false,
-});
+export const createEmptyForm = () => {
+  /** @type {LocationFormValues} */
+  const form = {
+    name: '',
+    description: '',
+    imageUrls: Array(),
+    buttonUrl: '',
+    phones: Array(),
+    emails: Array(),
+    websites: Array(),
+    addressLine1: '',
+    city: '',
+    postalCode: '',
+    country: '',
+    countryCode: '',
+    type: 'store',
+    published: false,
+  };
+  return form;
+};
 
 /** @param {string | null | undefined} value @returns {string | null} */
 const normalizeUrl = (value) => {
@@ -52,7 +56,7 @@ export const serializeForm = (form) => {
     const value = payload[key];
     if (typeof value === 'string' && value.trim() === '') payload[key] = null;
   }
-  payload.website = normalizeUrl(form.website);
+  payload.websites = form.websites.map(normalizeUrl).filter((url) => url != null);
   payload.buttonUrl = normalizeUrl(form.buttonUrl);
   payload.imageUrls = form.imageUrls.map(normalizeUrl).filter((url) => url != null);
   return payload;
@@ -69,6 +73,40 @@ const FILES_QUERY = `
       pageInfo { hasNextPage endCursor }
     }
   }`;
+
+/**
+ * Repeatable text list: existing values as removable chips + input + Add button.
+ * @param {{label: string, values: string[], onChange: (values: string[]) => void, placeholder?: string, disabled?: boolean}} props
+ */
+function TextListField({label, values, onChange, placeholder = '', disabled = false}) {
+  const [input, setInput] = useState('');
+
+  const add = () => {
+    const value = input.trim();
+    if (!value || values.includes(value)) return;
+    onChange([...values, value]);
+    setInput('');
+  };
+
+  return (
+    <div>
+      {values.length > 0 && (
+        <s-stack direction="inline" gap="small">
+          {values.map((value, index) => (
+            <s-stack key={value} direction="inline" gap="none" alignItems="center">
+              <s-text>{value}</s-text>
+              <s-button type="button" variant="tertiary" icon="x" accessibilityLabel={`Remove ${value}`} onClick={() => onChange(values.filter((_, item) => item !== index))} disabled={disabled}></s-button>
+            </s-stack>
+          ))}
+        </s-stack>
+      )}
+      <s-grid gridTemplateColumns="1fr auto" gap="base" alignItems="end">
+        <s-text-field label={label} value={input} placeholder={placeholder} onInput={(event) => setInput(event.currentTarget.value)} disabled={disabled}></s-text-field>
+        <s-button type="button" onClick={add} disabled={disabled || !input.trim()}>Add</s-button>
+      </s-grid>
+    </div>
+  );
+}
 
 /**
  * @param {{form: LocationFormValues, onChange: (field: keyof LocationFormValues, value: string | boolean | string[]) => void, disabled?: boolean}} props
@@ -100,6 +138,7 @@ export default function LocationForm({form, onChange, disabled = false}) {
     setLibraryLoading(true);
     setLibraryError('');
     try {
+      // @ts-ignore - shopify.query is injected by embedded app direct API access
       const result = await shopify.query(FILES_QUERY, {variables: {first: 24, after}});
       if (result.errors?.length) throw new Error(result.errors[0].message);
       const files = /** @type {any} */ (result.data)?.files;
@@ -185,11 +224,9 @@ export default function LocationForm({form, onChange, disabled = false}) {
         </s-grid>
       </s-section>
       <s-section heading="Contact">
-        <s-grid gridTemplateColumns="1fr 1fr" gap="base">
-          <s-text-field label="Phone" value={form.phone} onInput={update('phone')} disabled={disabled}></s-text-field>
-          <s-email-field label="Email" value={form.email} onInput={update('email')} disabled={disabled}></s-email-field>
-        </s-grid>
-        <s-url-field label="Website" value={form.website} placeholder="https://…" onInput={update('website')} disabled={disabled}></s-url-field>
+        <TextListField label="Phone number" values={form.phones} onChange={(values) => onChange('phones', values)} placeholder="+371 20000000" disabled={disabled} />
+        <TextListField label="Email address" values={form.emails} onChange={(values) => onChange('emails', values)} placeholder="store@example.com" disabled={disabled} />
+        <TextListField label="Website" values={form.websites} onChange={(values) => onChange('websites', values)} placeholder="https://…" disabled={disabled} />
       </s-section>
       <s-section heading="Visibility">
         <s-select label="Location type" value={form.type} onChange={update('type')} disabled={disabled}>

@@ -102,7 +102,7 @@ export default function ImportPage() {
       <s-section heading="CSV file">
         {state.imported > 0 && <s-banner tone="success" heading="Import complete">{state.imported} locations were imported. <s-link href="/locations">View locations</s-link></s-banner>}
         {state.error && <s-banner tone="critical" heading="Import failed">{state.error}</s-banner>}
-        <s-paragraph>Required columns: name, address, city, postal_code, country. Optional: address2, state, latitude, longitude, phone, email, website, type, description, image_url, image_urls (separate multiple URLs with |), button_url.</s-paragraph>
+        <s-paragraph>Required columns: name, address, city, postal_code, country. Optional: address2, state, latitude, longitude, phone, phones, email, emails, website, websites (separate multiple values with |), type, description, image_url, image_urls, button_url.</s-paragraph>
         <s-checkbox label="Upload images to Shopify Files (Content → Files)" checked={uploadImages} onChange={(event) => setUploadImages(event.currentTarget.checked)}></s-checkbox>
         <s-drop-zone label="Drop a CSV file here or click to browse" accept=".csv,text/csv" onChange={(event) => handleFile(event.currentTarget.files?.[0])}></s-drop-zone>
         {state.loading && <s-spinner accessibilityLabel="Processing CSV" />}

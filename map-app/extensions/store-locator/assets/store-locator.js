@@ -81,6 +81,9 @@
     const openModal = (location) => {
       const address = addressOf(location);
       const images = Array.isArray(location.imageUrls) && location.imageUrls.length ? location.imageUrls : (location.imageUrl ? [location.imageUrl] : []);
+      const phones = Array.isArray(location.phones) ? location.phones : location.phone ? [location.phone] : [];
+      const emails = Array.isArray(location.emails) ? location.emails : location.email ? [location.email] : [];
+      const websites = Array.isArray(location.websites) ? location.websites : location.website ? [location.website] : [];
       modalBody.innerHTML = `
         ${images.length ? `<div class="dm-locator__modal-gallery">
           <img class="dm-locator__modal-image" src="${escapeHtml(images[0])}" alt="${escapeHtml(location.name)}" loading="lazy">
@@ -92,9 +95,9 @@
           ${location.description ? `<p class="dm-locator__modal-description">${escapeHtml(location.description)}</p>` : ''}
           ${address ? `<address class="dm-locator__modal-address">${escapeHtml(address)}</address>` : ''}
           <div class="dm-locator__modal-meta">
-            ${location.phone ? `<a href="tel:${escapeHtml(location.phone)}">${escapeHtml(location.phone)}</a>` : ''}
-            ${location.email ? `<a href="mailto:${escapeHtml(location.email)}">${escapeHtml(location.email)}</a>` : ''}
-            ${location.website ? `<a href="${escapeHtml(location.website)}" target="_blank" rel="noopener noreferrer">Website</a>` : ''}
+            ${phones.map((phone) => `<a href="tel:${escapeHtml(phone)}">${escapeHtml(phone)}</a>`).join('')}
+            ${emails.map((email) => `<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>`).join('')}
+            ${websites.map((site, index) => `<a href="${escapeHtml(site)}" target="_blank" rel="noopener noreferrer">Website${websites.length > 1 ? ` ${index + 1}` : ''}</a>`).join('')}
           </div>
           <a class="dm-locator__modal-directions" href="${escapeHtml(directionsUrl(location))}" target="_blank" rel="noopener noreferrer">Get directions</a>
         </div>`;

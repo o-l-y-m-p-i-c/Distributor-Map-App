@@ -37,9 +37,9 @@ model Location {
   latitude       Decimal?               @db.Decimal(10, 7)
   longitude      Decimal?               @db.Decimal(10, 7)
   coordinatesSource String               @default("missing")
-  phone          String?
-  email          String?
-  website        String?
+  phones         String[]               @default([])
+  emails         String[]               @default([])
+  websites       String[]               @default([])
   description    String?
   imageUrls      String[]               @default([])
   buttonUrl      String?

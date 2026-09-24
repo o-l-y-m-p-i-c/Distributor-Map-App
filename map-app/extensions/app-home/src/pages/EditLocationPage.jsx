@@ -5,8 +5,8 @@ import {fetchWithIdToken} from '../lib/shopify.js';
 
 const apiUrl = 'https://distributor-map-app.onrender.com/api/admin/locations';
 
-/** @type {(Exclude<keyof import('../components/LocationForm.jsx').LocationFormValues, 'published' | 'imageUrls'>)[]} */
-const textFields = ['name', 'description', 'buttonUrl', 'phone', 'email', 'website', 'addressLine1', 'city', 'postalCode', 'country', 'countryCode', 'type'];
+/** @type {(Exclude<keyof import('../components/LocationForm.jsx').LocationFormValues, 'published' | 'imageUrls' | 'phones' | 'emails' | 'websites'>)[]} */
+const textFields = ['name', 'description', 'buttonUrl', 'addressLine1', 'city', 'postalCode', 'country', 'countryCode', 'type'];
 
 export default function EditLocationPage() {
   const {params} = useRoute();
@@ -24,7 +24,7 @@ export default function EditLocationPage() {
       .then((payload) => {
         const location = payload?.location ?? {};
         setForm((current) => {
-          const next = {...current, published: Boolean(location.published), imageUrls: Array.isArray(location.imageUrls) ? location.imageUrls : location.imageUrl ? [location.imageUrl] : []};
+          const next = {...current, published: Boolean(location.published), imageUrls: Array.isArray(location.imageUrls) ? location.imageUrls : location.imageUrl ? [location.imageUrl] : [], phones: Array.isArray(location.phones) ? location.phones : location.phone ? [location.phone] : [], emails: Array.isArray(location.emails) ? location.emails : location.email ? [location.email] : [], websites: Array.isArray(location.websites) ? location.websites : location.website ? [location.website] : []};
           for (const field of textFields) next[field] = location[field] ?? '';
           return next;
         });
