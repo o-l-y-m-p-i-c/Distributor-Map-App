@@ -78,7 +78,17 @@ const DEFAULT_MODAL = {
  * @param {Record<string, any>} config @param {CustomSection[]} sections @returns {ModalRow[]}
  */
 const toLayout = (config, sections) => {
-  if (Array.isArray(config.layout) && config.layout.length) return config.layout;
+  if (Array.isArray(config.layout) && config.layout.length) {
+    return config.layout
+      .filter((/** @type {any} */ row) => row && Array.isArray(row.columns) && row.columns.length)
+      .map((/** @type {any} */ row) => ({
+        id: row.id ?? uid(),
+        columns: row.columns.map((/** @type {any} */ col) => ({
+          id: col.id ?? uid(),
+          blocks: (Array.isArray(col.blocks) ? col.blocks : []).map((/** @type {any} */ b) => ({...makeBlock(b?.type ?? 'field', b?.source ?? ''), ...b})),
+        })),
+      }));
+  }
   /** @type {ModalBlock[]} */
   let blocks = Array.isArray(config.blocks) && config.blocks.length ? config.blocks.map((/** @type {any} */ b) => ({...makeBlock(b.type ?? 'field', b.source ?? ''), ...b})) : Array();
   if (!blocks.length) {
@@ -219,7 +229,7 @@ export default function SettingsPage() {
   const patchModalKey = (key, value) => setModal((current) => ({...current, [key]: value}));
 
   /** @param {(layout: ModalRow[]) => ModalRow[]} fn */
-  const patchLayout = (fn) => setModal((current) => ({...current, layout: fn(current.layout)}));
+  const patchLayout = (fn) => setModal((current) => ({...current, layout: fn(Array.isArray(current.layout) ? current.layout : [])}));
 
   const addRow = () => patchLayout((layout) => [...layout, makeRow([makeColumn()])]);
 
@@ -227,12 +237,12 @@ export default function SettingsPage() {
   const removeRow = (rowId) => patchLayout((layout) => layout.filter((row) => row.id !== rowId));
 
   /** @param {string} rowId */
-  const addColumn = (rowId) => patchLayout((layout) => layout.map((row) => (row.id === rowId && row.columns.length < 4 ? {...row, columns: [...row.columns, makeColumn()]} : row)));
+  const addColumn = (rowId) => patchLayout((layout) => layout.map((row) => (row.id === rowId && (row.columns ?? []).length < 4 ? {...row, columns: [...(row.columns ?? []), makeColumn()]} : row)));
 
   /** @param {string} rowId @param {string} colId */
   const removeColumn = (rowId, colId) => patchLayout((layout) => layout
-    .map((row) => (row.id === rowId ? {...row, columns: row.columns.filter((col) => col.id !== colId)} : row))
-    .filter((row) => row.columns.length > 0));
+    .map((row) => (row.id === rowId ? {...row, columns: (row.columns ?? []).filter((col) => col.id !== colId)} : row))
+    .filter((row) => (row.columns ?? []).length > 0));
 
   /**
    * @param {BlockRef} from @param {string} toRowId @param {string} toColId @param {number} toIndex
@@ -302,7 +312,8 @@ export default function SettingsPage() {
 
   /** @param {string} type */
   const addBlockTo = (type) => {
-    const target = selected ?? {rowId: modal.layout[modal.layout.length - 1]?.id ?? '', colId: modal.layout[modal.layout.length - 1]?.columns[0]?.id ?? '', blockIndex: -1};
+    const lastRow = (modal.layout ?? [])[modal.layout.length - 1];
+    const target = selected ?? {rowId: lastRow?.id ?? '', colId: (lastRow?.columns ?? [])[0]?.id ?? '', blockIndex: -1};
     const block = makeBlock(type, type === 'field' ? 'name' : '');
     if (type === 'header') block.text = 'Heading';
     if (!target.rowId || !target.colId) {
@@ -357,8 +368,8 @@ export default function SettingsPage() {
 
   const selectedBlock = (() => {
     if (!selected) return null;
-    const row = modal.layout.find((item) => item.id === selected.rowId);
-    const col = row?.columns.find((item) => item.id === selected.colId);
+    const row = (modal.layout ?? []).find((item) => item.id === selected.rowId);
+    const col = (row?.columns ?? []).find((item) => item.id === selected.colId);
     const block = col?.blocks[selected.blockIndex] ?? null;
     return block ? {block, ref: {rowId: selected.rowId, colId: selected.colId, blockIndex: col?.blocks.indexOf(block) ?? 0}} : null;
   })();
@@ -367,7 +378,7 @@ export default function SettingsPage() {
     ...FIELD_SOURCES,
     ...sections.flatMap((section) => [
       {value: `section:${section.id}`, label: `Section — ${section.title}`},
-      ...section.fields.map((field) => ({value: `field:${field.id}`, label: `${section.title} → ${field.label}`})),
+      ...(section.fields ?? []).map((field) => ({value: `field:${field.id}`, label: `${section.title} → ${field.label}`})),
     ]),
   ];
   /** @type {Record<string, string>} */
@@ -375,7 +386,7 @@ export default function SettingsPage() {
   for (const option of sourceOptions) sourceLabels[option.value] = option.label;
 
   /** @param {BlockRef} ref @param {ModalBlock} block */
-  const isSelected = (ref, block) => Boolean(selected && selected.rowId === ref.rowId && selected.colId === ref.colId && modal.layout.find((row) => row.id === ref.rowId)?.columns.find((col) => col.id === ref.colId)?.blocks[selected.blockIndex] === block);
+  const isSelected = (ref, block) => Boolean(selected && selected.rowId === ref.rowId && selected.colId === ref.colId && (modal.layout ?? []).find((row) => row.id === ref.rowId)?.columns?.find((col) => col.id === ref.colId)?.blocks?.[selected.blockIndex] === block);
 
   return (
     <s-page heading="Settings">
@@ -397,7 +408,7 @@ export default function SettingsPage() {
                     <s-button type="button" icon="arrow-down" accessibilityLabel="Move section down" onClick={() => moveSection(sectionIndex, 1)} disabled={sectionIndex === sections.length - 1}></s-button>
                     <s-button type="button" tone="critical" icon="delete" accessibilityLabel="Remove section" onClick={() => removeSection(sectionIndex)}></s-button>
                   </s-grid>
-                  {section.fields.map((field, fieldIndex) => (
+                  {(section.fields ?? []).map((field, fieldIndex) => (
                     <s-grid key={field.id} gridTemplateColumns="1fr 160px auto" gap="small" alignItems="end">
                       <s-text-field label="Field label" value={field.label} onInput={(event) => patchField(sectionIndex, fieldIndex, {label: event.currentTarget.value})}></s-text-field>
                       <s-select label="Type" value={field.type} onChange={(event) => patchField(sectionIndex, fieldIndex, {type: event.currentTarget.value})}>
@@ -441,7 +452,7 @@ export default function SettingsPage() {
 
           <div style={{display: 'flex', justifyContent: 'center', padding: '16px 0'}}>
             <div style={{width: '300px', background: modal.backgroundColor, borderRadius: `${modal.borderRadius}px`, border: '1px solid #c4d5da', boxShadow: '0 12px 32px rgba(9,38,51,.15)', overflow: 'hidden', padding: '8px'}}>
-              {modal.layout.map((row, rowIndex) => (
+              {(modal.layout ?? []).map((row, rowIndex) => (
                 <div key={row.id}
                   onDragOver={allowDrop}
                   onDrop={(event) => dropOnRow(event, rowIndex)}
@@ -450,11 +461,11 @@ export default function SettingsPage() {
                   <div style={{display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px'}}>
                     <span draggable title="Drag to reorder row" onDragStart={(event) => { dragRef.current = {kind: 'row', rowId: row.id, colId: '', index: rowIndex}; event.stopPropagation(); }} style={{cursor: 'grab', fontSize: '11px', color: '#66808b', userSelect: 'none'}}>⠿ row {rowIndex + 1}</span>
                     <span style={{flex: 1}}></span>
-                    <button type="button" onClick={() => addColumn(row.id)} disabled={row.columns.length >= 4} style={{border: '1px solid #c4d5da', background: '#fff', borderRadius: '4px', fontSize: '10px', padding: '2px 8px', cursor: 'pointer'}}>+ column</button>
+                    <button type="button" onClick={() => addColumn(row.id)} disabled={(row.columns ?? []).length >= 4} style={{border: '1px solid #c4d5da', background: '#fff', borderRadius: '4px', fontSize: '10px', padding: '2px 8px', cursor: 'pointer'}}>+ column</button>
                     <button type="button" onClick={() => removeRow(row.id)} style={{border: '1px solid #e0b4b4', background: '#fff', color: '#a33', borderRadius: '4px', fontSize: '10px', padding: '2px 8px', cursor: 'pointer'}}>remove row</button>
                   </div>
                   <div style={{display: 'flex', gap: '6px'}}>
-                    {row.columns.map((col, colIndex) => (
+                    {(row.columns ?? []).map((col, colIndex) => (
                       <div key={col.id}
                         onDragOver={allowDrop}
                         onDrop={(event) => dropOnColumn(event, row.id, col.id)}
@@ -464,7 +475,7 @@ export default function SettingsPage() {
                           <span draggable title="Drag to reorder column" onDragStart={(event) => { dragRef.current = {kind: 'column', rowId: row.id, colId: col.id, index: colIndex}; event.stopPropagation(); }} style={{cursor: 'grab', fontSize: '10px', color: '#93aab3', userSelect: 'none'}}>⠿</span>
                           <button type="button" onClick={() => removeColumn(row.id, col.id)} style={{border: 'none', background: 'none', color: '#a33', fontSize: '10px', cursor: 'pointer', padding: 0}}>✕</button>
                         </div>
-                        {col.blocks.map((block, blockIndex) => {
+                        {(col.blocks ?? []).map((block, blockIndex) => {
                           const ref = {rowId: row.id, colId: col.id, blockIndex};
                           const active = isSelected(ref, block);
                           return (
@@ -484,7 +495,7 @@ export default function SettingsPage() {
                             </div>
                           );
                         })}
-                        {!col.blocks.length && <div style={{fontSize: '9px', color: '#93aab3', textAlign: 'center', padding: '10px 0'}}>drop blocks here</div>}
+                        {!(col.blocks ?? []).length && <div style={{fontSize: '9px', color: '#93aab3', textAlign: 'center', padding: '10px 0'}}>drop blocks here</div>}
                       </div>
                     ))}
                   </div>
