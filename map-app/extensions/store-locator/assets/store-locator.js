@@ -158,42 +158,57 @@
         return '';
       };
 
-      // Resolve the block list: configured blocks, or legacy section order.
+      // Resolve layout: rows → columns → blocks; fall back to flat blocks, then legacy section order.
       const configured = storefrontSettings?.modalConfig ?? {};
-      let blocks = Array.isArray(configured.blocks) && configured.blocks.length ? configured.blocks : null;
-      if (!blocks) {
-        const defaultOrder = ['gallery', 'header', 'description', 'address', 'contacts', 'directions', ...customSections.map((section) => `section:${section.id}`)];
-        const savedOrder = Array.isArray(configured.sections) ? configured.sections : [];
-        const order = [...savedOrder.filter((key) => key in outputs || key.startsWith('section:')), ...defaultOrder.filter((key) => !savedOrder.includes(key))];
-        const hiddenKeys = new Set(Array.isArray(configured.hidden) ? configured.hidden : []);
-        blocks = order.flatMap((key) => (key === 'header'
-          ? [{type: 'field', source: 'type', hidden: hiddenKeys.has('header')}, {type: 'field', source: 'name', hidden: hiddenKeys.has('header')}]
-          : [{type: 'field', source: key, hidden: hiddenKeys.has(key)}]));
+      /** @param {any} block @param {string} source */
+      const toBlock = (block, source) => ({type: 'field', text: '', label: '', color: '', size: 'base', hidden: false, ...(block ?? {}), source});
+      /** @param {any[]} blockList */
+      const wrapRows = (blockList) => [{id: 'row', columns: [{id: 'col', blocks: blockList}]}];
+      let rows = Array.isArray(configured.layout) && configured.layout.length ? configured.layout : null;
+      if (!rows) {
+        let blocks = Array.isArray(configured.blocks) && configured.blocks.length ? configured.blocks : null;
+        if (!blocks) {
+          const defaultOrder = ['gallery', 'header', 'description', 'address', 'contacts', 'directions', ...customSections.map((section) => `section:${section.id}`)];
+          const savedOrder = Array.isArray(configured.sections) ? configured.sections : [];
+          const order = [...savedOrder.filter((key) => key in outputs || key.startsWith('section:')), ...defaultOrder.filter((key) => !savedOrder.includes(key))];
+          const hiddenKeys = new Set(Array.isArray(configured.hidden) ? configured.hidden : []);
+          blocks = order.flatMap((key) => (key === 'header'
+            ? [toBlock({hidden: hiddenKeys.has('header')}, 'type'), toBlock({hidden: hiddenKeys.has('header')}, 'name')]
+            : [toBlock({hidden: hiddenKeys.has(key)}, key)]));
+        }
+        rows = wrapRows(blocks);
       }
 
       const blockStyle = (block) => (block.color ? ` style="--dm-block-accent:${escapeHtml(block.color)};--dm-block-ink:${escapeHtml(block.color)}"` : '');
 
       /** @param {{type: string, text?: string, source?: string, label?: string, color?: string, size?: string}} block */
-      const renderBlock = (block) => {
+      const renderBlockInner = (block) => {
         const ink = block.color ? ` style="color:${escapeHtml(block.color)}"` : '';
         if (block.type === 'header') {
           const size = block.size === 'large' ? 'large' : block.size === 'small' ? 'small' : 'base';
-          return `<div class="dm-locator__modal-section"><h4 class="dm-locator__modal-heading dm-locator__modal-heading--${size}"${ink}>${escapeHtml(block.text ?? '')}</h4></div>`;
+          return `<h4 class="dm-locator__modal-heading dm-locator__modal-heading--${size}"${ink}>${escapeHtml(block.text ?? '')}</h4>`;
         }
-        if (block.type === 'text') return block.text ? `<div class="dm-locator__modal-section"><p class="dm-locator__modal-text"${ink}>${escapeHtml(block.text)}</p></div>` : '';
-        if (block.type === 'divider') return `<div class="dm-locator__modal-section"><hr class="dm-locator__modal-divider"${block.color ? ` style="border-color:${escapeHtml(block.color)}"` : ''}></div>`;
+        if (block.type === 'text') return block.text ? `<p class="dm-locator__modal-text"${ink}>${escapeHtml(block.text)}</p>` : '';
+        if (block.type === 'divider') return `<hr class="dm-locator__modal-divider"${block.color ? ` style="border-color:${escapeHtml(block.color)}"` : ''}>`;
         if (block.type === 'spacer') return '<div class="dm-locator__modal-spacer"></div>';
         if (block.type === 'field') {
-          if (block.source === 'gallery') return outputs.gallery;
           const inner = sourceHtml(block.source ?? '');
           if (!inner) return '';
           const label = block.label ? `<span class="dm-locator__modal-block-label">${escapeHtml(block.label)}</span>` : '';
-          return `<div class="dm-locator__modal-section"${blockStyle(block)}>${label}${inner}</div>`;
+          return `<div${blockStyle(block)}>${label}${inner}</div>`;
         }
         return '';
       };
 
-      modalBody.innerHTML = blocks.filter((block) => !block.hidden).map(renderBlock).join('');
+      modalBody.innerHTML = rows
+        .map((row) => {
+          const columns = (row.columns ?? [])
+            .map((col) => `<div class="dm-locator__modal-col">${(col.blocks ?? []).filter((block) => !block.hidden).map(renderBlockInner).join('')}</div>`)
+            .join('');
+          const singleGallery = (row.columns ?? []).length === 1 && (row.columns[0].blocks ?? []).filter((block) => !block.hidden).length === 1 && row.columns[0].blocks[0]?.source === 'gallery';
+          return `<div class="dm-locator__modal-row${singleGallery ? ' dm-locator__modal-row--bleed' : ''}">${columns}</div>`;
+        })
+        .join('');
       modal.hidden = false;
     };
 
