@@ -34,7 +34,6 @@
     const endpoint = root.dataset.endpoint;
     let map;
     let locations = [];
-    let markerNodes = [];
 
     if (!form || !list || !count || !status || !empty || !error || !mapContainer || !endpoint) return;
 
@@ -263,35 +262,12 @@
         properties: {id: String(location.id), name: location.name},
       }));
       source?.setData({type: 'FeatureCollection', features});
-      markerNodes.forEach((node) => node.marker.remove());
-      markerNodes = nextLocations.filter((location) => location.longitude != null && location.latitude != null).map((location) => {
-        const element = document.createElement('button');
-        element.type = 'button';
-        element.className = 'dm-locator__marker';
-        element.setAttribute('aria-label', location.name);
-        element.addEventListener('click', () => openLocationModal(location.id));
-        const marker = new window.maplibregl.Marker({element}).setLngLat([Number(location.longitude), Number(location.latitude)]).addTo(map);
-        return {id: String(location.id), marker, element};
-      });
-      syncMarkers();
       if (center?.latitude != null && center?.longitude != null) {
         map.flyTo({center: [center.longitude, center.latitude], zoom: 10, essential: true});
       } else if (features.length) {
         const bounds = features.reduce((result, feature) => result.extend(feature.geometry.coordinates), new window.maplibregl.LngLatBounds(features[0].geometry.coordinates, features[0].geometry.coordinates));
         map.fitBounds(bounds, {padding: 50, maxZoom: 12});
       }
-    };
-
-    // Hide DOM markers whose point is grouped inside a cluster — the animated
-    // marker stays only for unclustered points. Uses the clustered source data
-    // (not rendered pixels) so opacity doesn't matter. Never hides everything:
-    // an empty result means tiles are not processed yet.
-    const syncMarkers = () => {
-      if (!map?.getSource('dm-locations')) return;
-      const features = map.querySourceFeatures('dm-locations');
-      if (!features.length) return;
-      const unclustered = new Set(features.filter((feature) => !feature.properties.point_count).map((feature) => String(feature.properties.id)));
-      markerNodes.forEach((node) => { node.element.style.display = unclustered.has(node.id) ? '' : 'none'; });
     };
 
     const initializeMap = async () => {
@@ -304,14 +280,13 @@
           const primary = styles.getPropertyValue('--dm-primary').trim() || '#176274';
           const accent = styles.getPropertyValue('--dm-accent').trim() || '#4ca9ba';
           map.addSource('dm-locations', {type: 'geojson', data: {type: 'FeatureCollection', features: []}, cluster: true, clusterMaxZoom: 13, clusterRadius: 48});
+          // Halo behind unclustered points (soft ring, Google-Maps-like pin glow).
+          map.addLayer({id: 'dm-points-halo', type: 'circle', source: 'dm-locations', filter: ['!', ['has', 'point_count']], paint: {'circle-color': accent, 'circle-opacity': 0.25, 'circle-radius': 16, 'circle-blur': 0.6}});
           map.addLayer({id: 'dm-clusters', type: 'circle', source: 'dm-locations', filter: ['has', 'point_count'], paint: {'circle-color': primary, 'circle-radius': ['step', ['get', 'point_count'], 18, 10, 24, 50, 30], 'circle-stroke-width': 2, 'circle-stroke-color': '#fff'}});
-          map.addLayer({id: 'dm-cluster-count', type: 'symbol', source: 'dm-locations', filter: ['has', 'point_count'], layout: {'text-field': '{point_count_abbreviated}', 'text-size': 12}, paint: {'text-color': '#fff'}});
-          map.addLayer({id: 'dm-points', type: 'circle', source: 'dm-locations', filter: ['!', ['has', 'point_count']], paint: {'circle-color': accent, 'circle-opacity': 0, 'circle-radius': 8, 'circle-stroke-width': 0, 'circle-stroke-color': '#fff'}});
+          map.addLayer({id: 'dm-cluster-count', type: 'symbol', source: 'dm-locations', filter: ['has', 'point_count'], layout: {'text-field': '{point_count_abbreviated}', 'text-size': 12, 'text-font': ['Noto Sans Bold', 'Noto Sans Regular']}, paint: {'text-color': '#fff'}});
+          map.addLayer({id: 'dm-points', type: 'circle', source: 'dm-locations', filter: ['!', ['has', 'point_count']], paint: {'circle-color': accent, 'circle-radius': 9, 'circle-stroke-width': 2.5, 'circle-stroke-color': '#fff'}});
           updateMap(locations);
         });
-        map.on('idle', syncMarkers);
-        map.on('moveend', syncMarkers);
-        map.on('sourcedata', syncMarkers);
         map.on('click', 'dm-clusters', (event) => {
           const feature = map.queryRenderedFeatures(event.point, {layers: ['dm-clusters']})[0];
           map.getSource('dm-locations').getClusterExpansionZoom(feature.properties.cluster_id, (err, zoom) => {
