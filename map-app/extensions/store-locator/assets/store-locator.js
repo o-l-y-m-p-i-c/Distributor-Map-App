@@ -263,15 +263,17 @@
         properties: {id: String(location.id), name: location.name},
       }));
       source?.setData({type: 'FeatureCollection', features});
-      markerNodes.forEach((marker) => marker.remove());
+      markerNodes.forEach((node) => node.marker.remove());
       markerNodes = nextLocations.filter((location) => location.longitude != null && location.latitude != null).map((location) => {
         const element = document.createElement('button');
         element.type = 'button';
         element.className = 'dm-locator__marker';
         element.setAttribute('aria-label', location.name);
         element.addEventListener('click', () => openLocationModal(location.id));
-        return new window.maplibregl.Marker({element}).setLngLat([Number(location.longitude), Number(location.latitude)]).addTo(map);
+        const marker = new window.maplibregl.Marker({element}).setLngLat([Number(location.longitude), Number(location.latitude)]).addTo(map);
+        return {id: String(location.id), marker, element};
       });
+      syncMarkers();
       if (center?.latitude != null && center?.longitude != null) {
         map.flyTo({center: [center.longitude, center.latitude], zoom: 10, essential: true});
       } else if (features.length) {
@@ -280,18 +282,30 @@
       }
     };
 
+    // Hide DOM markers whose point is grouped inside a cluster — the animated
+    // marker stays only for unclustered points.
+    const syncMarkers = () => {
+      if (!map?.getLayer('dm-points')) return;
+      const unclustered = new Set(map.queryRenderedFeatures({layers: ['dm-points']}).map((feature) => String(feature.properties.id)));
+      markerNodes.forEach((node) => { node.element.style.display = unclustered.has(node.id) ? '' : 'none'; });
+    };
+
     const initializeMap = async () => {
       try {
         const maplibregl = await loadMapLibre();
         map = new maplibregl.Map({container: mapContainer, style: 'https://tiles.openfreemap.org/styles/liberty', center: [0, 20], zoom: 1.5, attributionControl: true});
         map.addControl(new maplibregl.NavigationControl(), 'top-right');
         map.on('load', () => {
+          const styles = getComputedStyle(root);
+          const primary = styles.getPropertyValue('--dm-primary').trim() || '#176274';
+          const accent = styles.getPropertyValue('--dm-accent').trim() || '#4ca9ba';
           map.addSource('dm-locations', {type: 'geojson', data: {type: 'FeatureCollection', features: []}, cluster: true, clusterMaxZoom: 13, clusterRadius: 48});
-          map.addLayer({id: 'dm-clusters', type: 'circle', source: 'dm-locations', filter: ['has', 'point_count'], paint: {'circle-color': '#176274', 'circle-radius': ['step', ['get', 'point_count'], 18, 10, 24, 50, 30], 'circle-stroke-width': 2, 'circle-stroke-color': '#fff'}});
+          map.addLayer({id: 'dm-clusters', type: 'circle', source: 'dm-locations', filter: ['has', 'point_count'], paint: {'circle-color': primary, 'circle-radius': ['step', ['get', 'point_count'], 18, 10, 24, 50, 30], 'circle-stroke-width': 2, 'circle-stroke-color': '#fff'}});
           map.addLayer({id: 'dm-cluster-count', type: 'symbol', source: 'dm-locations', filter: ['has', 'point_count'], layout: {'text-field': '{point_count_abbreviated}', 'text-size': 12}, paint: {'text-color': '#fff'}});
-          map.addLayer({id: 'dm-points', type: 'circle', source: 'dm-locations', filter: ['!', ['has', 'point_count']], paint: {'circle-color': '#4ca9ba', 'circle-radius': 8, 'circle-stroke-width': 2, 'circle-stroke-color': '#fff'}});
+          map.addLayer({id: 'dm-points', type: 'circle', source: 'dm-locations', filter: ['!', ['has', 'point_count']], paint: {'circle-color': accent, 'circle-opacity': 0, 'circle-radius': 8, 'circle-stroke-width': 0, 'circle-stroke-color': '#fff'}});
           updateMap(locations);
         });
+        map.on('idle', syncMarkers);
         map.on('click', 'dm-clusters', (event) => {
           const feature = map.queryRenderedFeatures(event.point, {layers: ['dm-clusters']})[0];
           map.getSource('dm-locations').getClusterExpansionZoom(feature.properties.cluster_id, (err, zoom) => {
