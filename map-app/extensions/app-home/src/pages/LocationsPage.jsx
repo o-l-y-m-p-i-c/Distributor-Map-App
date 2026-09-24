@@ -9,6 +9,7 @@ const apiUrl = 'https://distributor-map-app.onrender.com/api/admin/locations';
 export default function LocationsPage() {
   const [locations, setLocations] = useState(/** @type {Location[]} */ ([]));
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -22,10 +23,32 @@ export default function LocationsPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const exportCsv = async () => {
+    setExporting(true);
+    setError('');
+    try {
+      const response = await fetchWithIdToken('https://distributor-map-app.onrender.com/api/admin/export/locations.csv', {headers: {accept: 'text/csv'}});
+      if (!response.ok) throw new Error(`Export failed (${response.status})`);
+      const url = URL.createObjectURL(await response.blob());
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'locations.csv';
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (exportError) {
+      setError(exportError instanceof Error ? exportError.message : 'Unable to export locations');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <s-page heading="Locations">
       <s-button slot="primary-action" variant="primary" href="/locations/new">Add location</s-button>
-      <s-button slot="secondary-actions" href="/locations/import">Import CSV</s-button>
+      <s-button-group slot="secondary-actions">
+        <s-button href="/locations/import">Import CSV</s-button>
+        <s-button loading={exporting} onClick={() => void exportCsv()}>Export CSV</s-button>
+      </s-button-group>
       <s-section heading="Retail network">
         <s-paragraph>Manage stores, retailers, stockists, distributors, and dealers for your storefront locator.</s-paragraph>
         {loading && <s-spinner accessibilityLabel="Loading locations" />}
