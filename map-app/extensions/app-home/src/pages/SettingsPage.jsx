@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState} from 'preact/hooks';
+import {useEffect, useState} from 'preact/hooks';
 import {fetchWithIdToken} from '../lib/shopify.js';
 
 const settingsUrl = 'https://distributor-map-app.onrender.com/api/admin/settings';
@@ -111,34 +111,19 @@ const toLayout = (config, sections) => {
 };
 
 /**
- * Mini render of a block for the canvas (not the storefront).
- * @param {ModalBlock} block @param {ModalConfig} modal @param {Record<string, string>} sourceLabels
+ * Text summary of a block shown on its canvas chip.
+ * @param {ModalBlock} block @param {Record<string, string>} sourceLabels @returns {string}
  */
-function blockPreview(block, modal, sourceLabels) {
-  const color = block.color || '';
-  const bar = (/** @type {string} */ width, /** @type {string} */ c = '#b9cdd4') => (
-    <div style={{width, height: '6px', background: color || c, borderRadius: '3px', marginBottom: '4px'}}></div>
-  );
-  if (block.type === 'header') {
-    const fontSize = block.size === 'large' ? '15px' : block.size === 'small' ? '9px' : '12px';
-    return <div style={{fontSize, fontWeight: 700, color: color || modal.textColor}}>{block.text || 'Heading'}</div>;
-  }
-  if (block.type === 'text') return <div>{bar('95%', '#c7d7dc')}{bar('65%', '#c7d7dc')}</div>;
-  if (block.type === 'divider') return <div style={{borderTop: `1px solid ${color || '#c7d7dc'}`}}></div>;
-  if (block.type === 'spacer') return <div style={{height: '12px', fontSize: '8px', color: '#93aab3', textAlign: 'center'}}>spacer</div>;
-  const source = block.source ?? '';
-  if (source === 'gallery') return <div style={{height: '54px', background: 'linear-gradient(135deg,#c5d8de,#8fb4bf)', borderRadius: '5px'}}></div>;
-  if (source === 'type') return <span style={{fontSize: '8px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em', color: color || modal.accentColor}}>Store</span>;
-  if (source === 'name') return <div style={{fontSize: '13px', fontWeight: 700, color: color || modal.textColor}}>Location name</div>;
-  if (source === 'description') return <div>{bar('100%', '#c7d7dc')}{bar('85%', '#c7d7dc')}{bar('55%', '#c7d7dc')}</div>;
-  if (source === 'address') return bar('72%');
-  if (source === 'directions') return <span style={{display: 'inline-block', background: color || modal.accentColor, color: '#fff', borderRadius: '999px', padding: '5px 12px', fontSize: '9px', fontWeight: 700}}>Get directions</span>;
-  return <div>
-    {block.label && <div style={{fontSize: '8px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: modal.textColor, opacity: .5, marginBottom: '3px'}}>{block.label}</div>}
-    <span style={{fontSize: '9px', fontWeight: 600, color: color || modal.accentColor}}>{sourceLabels[source] ?? source}</span>
-    {bar('60%', '#c7d7dc')}
-  </div>;
-}
+const blockSummary = (block, sourceLabels) => {
+  if (block.type === 'header') return `"${block.text || 'Heading'}" · ${block.size}`;
+  if (block.type === 'text') return block.text ? (block.text.length > 60 ? `${block.text.slice(0, 60)}…` : block.text) : 'Free text';
+  if (block.type === 'divider') return 'Horizontal line';
+  if (block.type === 'spacer') return 'Empty space';
+  const parts = [sourceLabels[block.source] ?? block.source ?? 'pick an output'];
+  if (block.label) parts.unshift(`“${block.label}”`);
+  if (block.color) parts.push(block.color);
+  return parts.join(' · ');
+};
 
 export default function SettingsPage() {
   const [sections, setSections] = useState(/** @type {CustomSection[]} */ ([]));
@@ -148,7 +133,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
-  const dragRef = useRef(/** @type {{kind: string, rowId: string, colId: string, index: number} | null} */ (null));
+
 
   useEffect(() => {
     fetchWithIdToken(settingsUrl, {headers: {accept: 'application/json'}})
@@ -327,41 +312,16 @@ export default function SettingsPage() {
     setSelected({rowId: target.rowId, colId: target.colId, blockIndex: 999});
   };
 
-  // --- drag & drop ---------------------------------------------------------------
+  // --- placement -----------------------------------------------------------------
 
-  /** @param {DragEvent} event */
-  const allowDrop = (event) => event.preventDefault();
-
-  /** @param {DragEvent} event @param {BlockRef} ref */
-  const dropOnBlock = (event, ref) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const drag = dragRef.current;
-    dragRef.current = null;
-    if (!drag) return;
-    if (drag.kind === 'block') moveBlockTo({rowId: drag.rowId, colId: drag.colId, blockIndex: drag.index}, ref.rowId, ref.colId, ref.blockIndex);
-  };
-
-  /** @param {DragEvent} event @param {string} rowId @param {string} colId */
-  const dropOnColumn = (event, rowId, colId) => {
-    event.preventDefault();
-    const drag = dragRef.current;
-    dragRef.current = null;
-    if (!drag) return;
-    if (drag.kind === 'block') moveBlockTo({rowId: drag.rowId, colId: drag.colId, blockIndex: drag.index}, rowId, colId, 999);
-    if (drag.kind === 'column') {
-      const rowIndex = modal.layout.findIndex((row) => row.id === rowId);
-      const targetIndex = modal.layout[rowIndex]?.columns.findIndex((col) => col.id === colId) ?? -1;
-      if (targetIndex >= 0) moveColumnTo(rowId, drag.index, targetIndex);
-    }
-  };
-
-  /** @param {DragEvent} event @param {number} rowIndex */
-  const dropOnRow = (event, rowIndex) => {
-    event.preventDefault();
-    const drag = dragRef.current;
-    dragRef.current = null;
-    if (drag?.kind === 'row') moveRowTo(drag.index, rowIndex);
+  /**
+   * Move the currently selected block into the given column position.
+   * @param {string} rowId @param {string} colId @param {number} index
+   */
+  const placeSelected = (rowId, colId, index) => {
+    if (!selected) return;
+    moveBlockTo(selected, rowId, colId, index);
+    setSelected(null);
   };
 
   // --- selection -----------------------------------------------------------------
@@ -443,67 +403,74 @@ export default function SettingsPage() {
 
       {!loading && (
         <s-section heading="Modal layout constructor">
-          <s-paragraph>Drag blocks between columns, drag columns to reorder them inside a row, and drag rows by their handle. Click a block to edit it.</s-paragraph>
-          <s-stack direction="inline" gap="small">
-            {BLOCK_TYPES.map((type) => (
-              <s-button key={type.value} type="button" onClick={() => addBlockTo(type.value)}>+ {type.label}</s-button>
-            ))}
-          </s-stack>
-
-          <div style={{display: 'flex', justifyContent: 'center', padding: '16px 0'}}>
-            <div style={{width: '300px', background: modal.backgroundColor, borderRadius: `${modal.borderRadius}px`, border: '1px solid #c4d5da', boxShadow: '0 12px 32px rgba(9,38,51,.15)', overflow: 'hidden', padding: '8px'}}>
-              {(modal.layout ?? []).map((row, rowIndex) => (
-                <div key={row.id}
-                  onDragOver={allowDrop}
-                  onDrop={(event) => dropOnRow(event, rowIndex)}
-                  style={{border: '1px dashed #b9cdd4', borderRadius: '8px', marginBottom: '8px', padding: '6px'}}
-                >
-                  <div style={{display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px'}}>
-                    <span draggable title="Drag to reorder row" onDragStart={(event) => { dragRef.current = {kind: 'row', rowId: row.id, colId: '', index: rowIndex}; event.stopPropagation(); }} style={{cursor: 'grab', fontSize: '11px', color: '#66808b', userSelect: 'none'}}>⠿ row {rowIndex + 1}</span>
-                    <span style={{flex: 1}}></span>
-                    <button type="button" onClick={() => addColumn(row.id)} disabled={(row.columns ?? []).length >= 4} style={{border: '1px solid #c4d5da', background: '#fff', borderRadius: '4px', fontSize: '10px', padding: '2px 8px', cursor: 'pointer'}}>+ column</button>
-                    <button type="button" onClick={() => removeRow(row.id)} style={{border: '1px solid #e0b4b4', background: '#fff', color: '#a33', borderRadius: '4px', fontSize: '10px', padding: '2px 8px', cursor: 'pointer'}}>remove row</button>
-                  </div>
-                  <div style={{display: 'flex', gap: '6px'}}>
-                    {(row.columns ?? []).map((col, colIndex) => (
-                      <div key={col.id}
-                        onDragOver={allowDrop}
-                        onDrop={(event) => dropOnColumn(event, row.id, col.id)}
-                        style={{flex: 1, minWidth: 0, minHeight: '48px', border: '1px dashed #cfe0e5', borderRadius: '6px', padding: '4px', background: 'rgba(255,255,255,.5)'}}
-                      >
-                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px'}}>
-                          <span draggable title="Drag to reorder column" onDragStart={(event) => { dragRef.current = {kind: 'column', rowId: row.id, colId: col.id, index: colIndex}; event.stopPropagation(); }} style={{cursor: 'grab', fontSize: '10px', color: '#93aab3', userSelect: 'none'}}>⠿</span>
-                          <button type="button" onClick={() => removeColumn(row.id, col.id)} style={{border: 'none', background: 'none', color: '#a33', fontSize: '10px', cursor: 'pointer', padding: 0}}>✕</button>
-                        </div>
-                        {(col.blocks ?? []).map((block, blockIndex) => {
-                          const ref = {rowId: row.id, colId: col.id, blockIndex};
-                          const active = isSelected(ref, block);
-                          return (
-                            <div key={block.id}
-                              draggable
-                              onDragStart={(event) => { dragRef.current = {kind: 'block', rowId: row.id, colId: col.id, index: blockIndex}; event.stopPropagation(); }}
-                              onDragOver={allowDrop}
-                              onDrop={(event) => dropOnBlock(event, ref)}
-                              onClick={() => setSelected(ref)}
-                              style={{padding: '5px 6px', marginBottom: '5px', borderRadius: '5px', cursor: 'grab', border: `1px solid ${active ? '#176274' : '#dbe7eb'}`, outline: active ? '1px solid #176274' : 'none', background: block.hidden ? '#eef3f5' : '#fff', opacity: block.hidden ? .55 : 1}}
-                            >
-                              <div style={{fontSize: '8px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: '#66808b', marginBottom: '3px'}}>
-                                {BLOCK_TYPE_LABELS[block.type] ?? block.type}
-                                {block.type === 'field' ? ` · ${sourceLabels[block.source] ?? block.source}` : ''}
-                              </div>
-                              {blockPreview(block, modal, sourceLabels)}
-                            </div>
-                          );
-                        })}
-                        {!(col.blocks ?? []).length && <div style={{fontSize: '9px', color: '#93aab3', textAlign: 'center', padding: '10px 0'}}>drop blocks here</div>}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+          <s-paragraph>The canvas below mirrors the modal: rows stack vertically, each row splits into columns, and each column holds a stack of blocks. Click a block to select and edit it — while a block is selected, "Place here" slots appear in every column so you can drop it anywhere. Rows and columns are reordered with their position selectors.</s-paragraph>
+          <s-stack direction="block" gap="base">
+            <s-stack direction="inline" gap="small">
+              {BLOCK_TYPES.map((type) => (
+                <s-button key={type.value} type="button" onClick={() => addBlockTo(type.value)}>+ {type.label}</s-button>
               ))}
-              <button type="button" onClick={addRow} style={{width: '100%', border: '1px dashed #b9cdd4', background: 'none', borderRadius: '8px', padding: '8px', fontSize: '10px', color: '#176274', cursor: 'pointer'}}>+ add row</button>
-            </div>
-          </div>
+            </s-stack>
+
+            {(modal.layout ?? []).map((row, rowIndex) => (
+              <s-box key={row.id} border="base" borderRadius="base" padding="base" background="subdued">
+                <s-stack direction="block" gap="base">
+                  <s-grid gridTemplateColumns="auto 1fr auto auto" gap="small" alignItems="center">
+                    <s-text type="strong">Row {rowIndex + 1}</s-text>
+                    <s-select label="Row position" labelAccessibilityVisibility="exclusive" value={String(rowIndex + 1)} onChange={(event) => moveRowTo(rowIndex, Number(event.currentTarget.value) - 1)}>
+                      {(modal.layout ?? []).map((_, i) => <s-option key={i} value={String(i + 1)}>Row {i + 1}</s-option>)}
+                    </s-select>
+                    <s-button type="button" onClick={() => addColumn(row.id)} disabled={(row.columns ?? []).length >= 4}>+ column</s-button>
+                    <s-button type="button" tone="critical" icon="delete" accessibilityLabel="Remove row" onClick={() => removeRow(row.id)}></s-button>
+                  </s-grid>
+                  <s-grid gridTemplateColumns={(row.columns ?? []).map(() => '1fr').join(' ')} gap="small" alignItems="start">
+                    {(row.columns ?? []).map((col, colIndex) => (
+                      <s-box key={col.id} border="base" borderRadius="base" padding="small">
+                        <s-stack direction="block" gap="small">
+                          <s-grid gridTemplateColumns="1fr auto" gap="small" alignItems="center">
+                            <s-select label="Column position" labelAccessibilityVisibility="exclusive" value={String(colIndex + 1)} onChange={(event) => moveColumnTo(row.id, colIndex, Number(event.currentTarget.value) - 1)}>
+                              {(row.columns ?? []).map((_, i) => <s-option key={i} value={String(i + 1)}>Col {i + 1}</s-option>)}
+                            </s-select>
+                            <s-button type="button" tone="critical" icon="delete" accessibilityLabel="Remove column" onClick={() => removeColumn(row.id, col.id)}></s-button>
+                          </s-grid>
+                          {selected && (
+                            <s-clickable onClick={() => placeSelected(row.id, col.id, 0)} padding="small" border="base" borderRadius="base">
+                              <s-text color="subdued">+ place here</s-text>
+                            </s-clickable>
+                          )}
+                          {(col.blocks ?? []).map((block, blockIndex) => {
+                            const ref = {rowId: row.id, colId: col.id, blockIndex};
+                            const active = isSelected(ref, block);
+                            return (
+                              <s-stack key={block.id} direction="block" gap="small">
+                                <s-clickable onClick={() => setSelected(ref)} padding="small" border="base" borderRadius="base" background={active ? 'subdued' : 'base'}>
+                                  <s-stack direction="block" gap="small">
+                                    <s-stack direction="inline" gap="small">
+                                      <s-text type="strong">{BLOCK_TYPE_LABELS[block.type] ?? block.type}</s-text>
+                                      {block.type === 'field' && <s-badge>{sourceLabels[block.source] ?? block.source}</s-badge>}
+                                      {block.hidden && <s-badge tone="warning">hidden</s-badge>}
+                                      {active && <s-badge tone="info">selected</s-badge>}
+                                    </s-stack>
+                                    <s-text color="subdued">{blockSummary(block, sourceLabels)}</s-text>
+                                  </s-stack>
+                                </s-clickable>
+                                {selected && (
+                                  <s-clickable onClick={() => placeSelected(row.id, col.id, blockIndex + 1)} padding="small" border="base" borderRadius="base">
+                                    <s-text color="subdued">+ place here</s-text>
+                                  </s-clickable>
+                                )}
+                              </s-stack>
+                            );
+                          })}
+                          {!(col.blocks ?? []).length && !selected && <s-text color="subdued">Empty column — select a block above to place it here</s-text>}
+                        </s-stack>
+                      </s-box>
+                    ))}
+                  </s-grid>
+                </s-stack>
+              </s-box>
+            ))}
+            <s-button type="button" onClick={addRow}>+ add row</s-button>
+          </s-stack>
         </s-section>
       )}
 
