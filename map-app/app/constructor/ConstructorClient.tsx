@@ -86,7 +86,7 @@ const toLayout = (config: Record<string, unknown>, sections: CustomSection[]): R
       }));
     if (rows.length) return rows;
   }
-  let blocks: Block[] = Array.isArray(config.blocks) && config.blocks.length
+  const blocks: Block[] = Array.isArray(config.blocks) && config.blocks.length
     ? (config.blocks as Partial<Block>[]).map(normalizeBlock)
     : [];
   if (!blocks.length) {
@@ -252,15 +252,15 @@ export default function ConstructorClient() {
   const [dropAt, setDropAt] = useState<SelectedRef | null>(null);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const urlToken = params.get('token') ?? '';
-    if (!urlToken) {
-      setError('Missing token. Open this editor from the Distributor Map app settings in Shopify admin.');
-      setLoading(false);
-      return;
-    }
-    setToken(urlToken);
-    fetch('/api/admin/settings', {headers: {accept: 'application/json', Authorization: `Bearer ${urlToken}`}})
+    queueMicrotask(() => {
+      const urlToken = new URLSearchParams(window.location.search).get('token') ?? '';
+      if (!urlToken) {
+        setError('Missing token. Open this editor from the Distributor Map app settings in Shopify admin.');
+        setLoading(false);
+        return;
+      }
+      setToken(urlToken);
+      fetch('/api/admin/settings', {headers: {accept: 'application/json', Authorization: `Bearer ${urlToken}`}})
       .then(async (response) => {
         if (!response.ok) {
           if (response.status === 401) throw new Error('Session expired — close this tab and reopen the editor from Shopify admin → Settings.');
@@ -279,6 +279,7 @@ export default function ConstructorClient() {
         setError(requestError instanceof Error ? requestError.message : 'Unable to load settings');
         setLoading(false);
       });
+    });
   }, []);
 
   const save = async () => {
@@ -501,7 +502,7 @@ export default function ConstructorClient() {
               {BLOCK_TYPES.map((type) => (
                 <button key={type.value} type="button" onClick={() => addBlockTo(type.value)}>+ {type.label}</button>
               ))}
-              <span className="dm-editor__palette-hint">Adds below the selected block's column, or a new row when nothing is selected.</span>
+              <span className="dm-editor__palette-hint">Adds below the selected block&apos;s column, or a new row when nothing is selected.</span>
             </div>
 
             <div className="dm-editor__modal-wrap" style={previewVars}>
