@@ -52,7 +52,13 @@ export async function PUT(request: Request, { params }: RouteContext) {
     const input = locationUpdateSchema.parse(await request.json());
     const existing = await prisma.location.findFirst({ where: { id, shopId: shop.id }, select: { id: true } });
     if (!existing) return errorResponse('Location not found', 404);
-    const data = { ...input, ...(input.latitude !== undefined || input.longitude !== undefined ? { coordinatesSource: 'manual' } : {}) };
+    const data = {
+      ...input,
+      ...(input.phones !== undefined ? { phone: input.phones[0] ?? null } : {}),
+      ...(input.emails !== undefined ? { email: input.emails[0] ?? null } : {}),
+      ...(input.websites !== undefined ? { website: input.websites[0] ?? null } : {}),
+      ...(input.latitude !== undefined || input.longitude !== undefined ? { coordinatesSource: 'manual' } : {}),
+    };
     let location = await prisma.location.update({ where: { id }, data });
 
     if (location.latitude == null || location.longitude == null) {

@@ -40,6 +40,11 @@ model Location {
   phones         String[]               @default([])
   emails         String[]               @default([])
   websites       String[]               @default([])
+  // Legacy single-value mirrors of phones[0]/emails[0]/websites[0]; kept so
+  // older deployed code and exports continue to work.
+  phone          String?
+  email          String?
+  website        String?
   description    String?
   imageUrls      String[]               @default([])
   buttonUrl      String?

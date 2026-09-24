@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     const { shop } = await authenticateAdminRequest(request);
     const input = createLocationSchema.parse(await request.json());
     const hasCoordinates = input.latitude != null && input.longitude != null;
-    const location = await prisma.location.create({ data: { ...input, coordinatesSource: hasCoordinates ? 'manual' : 'missing', shopId: shop.id } });
+    const location = await prisma.location.create({ data: { ...input, phone: input.phones?.[0] ?? null, email: input.emails?.[0] ?? null, website: input.websites?.[0] ?? null, coordinatesSource: hasCoordinates ? 'manual' : 'missing', shopId: shop.id } });
 
     if (!hasCoordinates) {
       const address = [input.addressLine1, input.addressLine2, input.city, input.state, input.postalCode, input.country].filter(Boolean).join(', ');
