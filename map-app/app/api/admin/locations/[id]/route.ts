@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { authenticateAdminRequest } from '@/lib/auth/shopify';
+import { geocodeAddress } from '@/lib/geo/geocode';
 import { prisma } from '@/lib/db/client';
 
 const locationUpdateSchema = z.object({
@@ -15,10 +16,12 @@ const locationUpdateSchema = z.object({
   countryCode: z.string().trim().length(2).toUpperCase().optional(),
   latitude: z.number().min(-90).max(90).nullable().optional(),
   longitude: z.number().min(-180).max(180).nullable().optional(),
-  phone: z.string().trim().max(60).nullable().optional(),
-  email: z.string().email().max(254).nullable().optional(),
-  website: z.string().url().max(2048).nullable().optional(),
+  phones: z.array(z.string().trim().min(1).max(60)).max(20).optional(),
+  emails: z.array(z.string().trim().min(1).max(254)).max(20).optional(),
+  websites: z.array(z.string().trim().min(1).max(2048)).max(20).optional(),
   description: z.string().trim().max(5000).nullable().optional(),
+  imageUrls: z.array(z.string().trim().min(1).max(2048)).max(50).optional(),
+  buttonUrl: z.string().trim().max(2048).nullable().optional(),
   type: z.string().trim().min(1).max(80).optional(),
   published: z.boolean().optional(),
 });
@@ -49,8 +52,27 @@ export async function PUT(request: Request, { params }: RouteContext) {
     const input = locationUpdateSchema.parse(await request.json());
     const existing = await prisma.location.findFirst({ where: { id, shopId: shop.id }, select: { id: true } });
     if (!existing) return errorResponse('Location not found', 404);
-    const data = { ...input, ...(input.latitude !== undefined || input.longitude !== undefined ? { coordinatesSource: 'manual' } : {}) };
-    const location = await prisma.location.update({ where: { id }, data });
+    const data = {
+      ...input,
+      ...(input.phones !== undefined ? { phone: input.phones[0] ?? null } : {}),
+      ...(input.emails !== undefined ? { email: input.emails[0] ?? null } : {}),
+      ...(input.websites !== undefined ? { website: input.websites[0] ?? null } : {}),
+      ...(input.latitude !== undefined || input.longitude !== undefined ? { coordinatesSource: 'manual' } : {}),
+    };
+    let location = await prisma.location.update({ where: { id }, data });
+
+    if (location.latitude == null || location.longitude == null) {
+      const address = [location.addressLine1, location.addressLine2, location.city, location.state, location.postalCode, location.country].filter(Boolean).join(', ');
+      try {
+        const geocoded = await geocodeAddress(address);
+        if (geocoded) {
+          location = await prisma.location.update({ where: { id }, data: { latitude: geocoded.latitude, longitude: geocoded.longitude, coordinatesSource: 'geocoded' } });
+        }
+      } catch (geocodeError) {
+        console.error('Location geocoding failed after update', geocodeError);
+      }
+    }
+
     return NextResponse.json({ location });
   } catch (error) {
     if (error instanceof z.ZodError) return errorResponse('Invalid location data', 400);

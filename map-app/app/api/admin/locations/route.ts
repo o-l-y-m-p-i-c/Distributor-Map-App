@@ -16,10 +16,12 @@ const createLocationSchema = z.object({
   countryCode: z.string().trim().length(2).toUpperCase(),
   latitude: z.number().min(-90).max(90).optional().nullable(),
   longitude: z.number().min(-180).max(180).optional().nullable(),
-  phone: z.string().trim().max(60).optional().nullable(),
-  email: z.string().email().max(254).optional().nullable(),
-  website: z.string().url().max(2048).optional().nullable(),
+  phones: z.array(z.string().trim().min(1).max(60)).max(20).optional(),
+  emails: z.array(z.string().trim().min(1).max(254)).max(20).optional(),
+  websites: z.array(z.string().trim().min(1).max(2048)).max(20).optional(),
   description: z.string().trim().max(5000).optional().nullable(),
+  imageUrls: z.array(z.string().trim().min(1).max(2048)).max(50).optional(),
+  buttonUrl: z.string().trim().max(2048).optional().nullable(),
   type: z.string().trim().min(1).max(80).default('store'),
   published: z.boolean().default(false),
 });
@@ -64,7 +66,7 @@ export async function POST(request: Request) {
     const { shop } = await authenticateAdminRequest(request);
     const input = createLocationSchema.parse(await request.json());
     const hasCoordinates = input.latitude != null && input.longitude != null;
-    const location = await prisma.location.create({ data: { ...input, coordinatesSource: hasCoordinates ? 'manual' : 'missing', shopId: shop.id } });
+    const location = await prisma.location.create({ data: { ...input, phone: input.phones?.[0] ?? null, email: input.emails?.[0] ?? null, website: input.websites?.[0] ?? null, coordinatesSource: hasCoordinates ? 'manual' : 'missing', shopId: shop.id } });
 
     if (!hasCoordinates) {
       const address = [input.addressLine1, input.addressLine2, input.city, input.state, input.postalCode, input.country].filter(Boolean).join(', ');
