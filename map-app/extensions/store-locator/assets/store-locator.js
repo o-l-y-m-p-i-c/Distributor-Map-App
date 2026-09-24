@@ -283,7 +283,7 @@
           // Halo behind unclustered points (soft ring, Google-Maps-like pin glow).
           map.addLayer({id: 'dm-points-halo', type: 'circle', source: 'dm-locations', filter: ['!', ['has', 'point_count']], paint: {'circle-color': accent, 'circle-opacity': 0.25, 'circle-radius': 16, 'circle-blur': 0.6}});
           map.addLayer({id: 'dm-clusters', type: 'circle', source: 'dm-locations', filter: ['has', 'point_count'], paint: {'circle-color': primary, 'circle-radius': ['step', ['get', 'point_count'], 18, 10, 24, 50, 30], 'circle-stroke-width': 2, 'circle-stroke-color': '#fff'}});
-          map.addLayer({id: 'dm-cluster-count', type: 'symbol', source: 'dm-locations', filter: ['has', 'point_count'], layout: {'text-field': '{point_count_abbreviated}', 'text-size': 12, 'text-font': ['Noto Sans Bold', 'Noto Sans Regular']}, paint: {'text-color': '#fff'}});
+          map.addLayer({id: 'dm-cluster-count', type: 'symbol', source: 'dm-locations', filter: ['has', 'point_count'], layout: {'text-field': '{point_count_abbreviated}', 'text-size': 12, 'text-font': ['Noto Sans Bold']}, paint: {'text-color': '#fff'}});
           map.addLayer({id: 'dm-points', type: 'circle', source: 'dm-locations', filter: ['!', ['has', 'point_count']], paint: {'circle-color': accent, 'circle-radius': 9, 'circle-stroke-width': 2.5, 'circle-stroke-color': '#fff'}});
           updateMap(locations);
         });
