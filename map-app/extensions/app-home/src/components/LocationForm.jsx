@@ -42,6 +42,12 @@ export const createEmptyForm = () => ({
   published: false,
 });
 
+/** @param {string | null | undefined} value @returns {string | null} */
+const normalizeUrl = (value) => {
+  const trimmed = (value ?? '').trim();
+  return /^https?:\/\//.test(trimmed) ? trimmed : null;
+};
+
 /** @param {LocationFormValues} form @returns {Record<string, unknown>} */
 export const serializeForm = (form) => {
   /** @type {Record<string, unknown>} */
@@ -50,6 +56,9 @@ export const serializeForm = (form) => {
     const value = payload[key];
     if (typeof value === 'string' && value.trim() === '') payload[key] = null;
   }
+  payload.website = normalizeUrl(form.website);
+  payload.buttonUrl = normalizeUrl(form.buttonUrl);
+  payload.imageUrls = form.imageUrls.map(normalizeUrl).filter((url) => url != null);
   return payload;
 };
 

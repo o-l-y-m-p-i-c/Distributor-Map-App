@@ -71,7 +71,7 @@
     const addressOf = (location) => [location.addressLine1, location.city, location.state, location.postalCode, location.country].filter(Boolean).join(', ');
 
     const directionsUrl = (location) => {
-      if (location.buttonUrl) return location.buttonUrl;
+      if (location.buttonUrl && /^https?:\/\//.test(location.buttonUrl)) return location.buttonUrl;
       if (location.latitude != null && location.longitude != null) {
         return `https://www.google.com/maps/dir/?api=1&destination=${Number(location.latitude)},${Number(location.longitude)}`;
       }
