@@ -1,17 +1,12 @@
-import {useEffect, useState} from 'preact/hooks';
+import {useState} from 'preact/hooks';
 import LocationForm, {createEmptyForm, serializeForm} from '../components/LocationForm.jsx';
-import {fetchWithIdToken, getFilesUrl} from '../lib/shopify.js';
+import {fetchWithIdToken} from '../lib/shopify.js';
 
 const apiUrl = 'https://distributor-map-app.onrender.com/api/admin/locations';
 
 export default function NewLocationPage() {
   const [form, setForm] = useState(createEmptyForm());
-  const [filesUrl, setFilesUrl] = useState('');
   const [state, setState] = useState({loading: false, error: '', success: false, geocoded: true});
-
-  useEffect(() => {
-    void getFilesUrl().then(setFilesUrl);
-  }, []);
 
   /** @param {keyof import('../components/LocationForm.jsx').LocationFormValues} field @param {string | boolean | string[]} value */
   const update = (field, value) => setForm((current) => ({...current, [field]: value}));
@@ -38,7 +33,7 @@ export default function NewLocationPage() {
         </s-banner>
       )}
       {state.error && <s-banner tone="critical" heading="Could not create location">{state.error}</s-banner>}
-      <LocationForm form={form} onChange={update} filesUrl={filesUrl} disabled={state.loading} />
+      <LocationForm form={form} onChange={update} disabled={state.loading} />
       <s-button type="button" variant="primary" loading={state.loading} onClick={() => void submit()}>Create location</s-button>
     </s-page>
   );

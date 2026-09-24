@@ -1,4 +1,5 @@
 import {useEffect, useState} from 'preact/hooks';
+import {useLocation} from 'preact-iso';
 import {fetchWithIdToken} from '../lib/shopify.js';
 
 const apiUrl = 'https://distributor-map-app.onrender.com/api/admin/locations';
@@ -7,6 +8,7 @@ const apiUrl = 'https://distributor-map-app.onrender.com/api/admin/locations';
 /** @typedef {{items?: Location[]}} LocationResponse */
 
 export default function LocationsPage() {
+  const {route} = useLocation();
   const [locations, setLocations] = useState(/** @type {Location[]} */ ([]));
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -45,10 +47,11 @@ export default function LocationsPage() {
   return (
     <s-page heading="Locations">
       <s-button slot="primary-action" variant="primary" href="/locations/new">Add location</s-button>
-      <s-button-group slot="secondary-actions">
-        <s-button href="/locations/import">Import CSV</s-button>
-        <s-button loading={exporting} onClick={() => void exportCsv()}>Export CSV</s-button>
-      </s-button-group>
+      <s-button slot="secondary-actions" commandFor="locations-actions">More actions</s-button>
+      <s-menu id="locations-actions" accessibilityLabel="Location actions">
+        <s-button icon="import" onClick={() => route('/locations/import')}>Import CSV</s-button>
+        <s-button icon="export" loading={exporting} onClick={() => void exportCsv()}>Export CSV</s-button>
+      </s-menu>
       <s-section heading="Retail network">
         <s-paragraph>Manage stores, retailers, stockists, distributors, and dealers for your storefront locator.</s-paragraph>
         {loading && <s-spinner accessibilityLabel="Loading locations" />}

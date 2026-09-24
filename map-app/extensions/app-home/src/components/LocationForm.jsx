@@ -20,6 +20,8 @@ import {useState} from 'preact/hooks';
  * @property {boolean} published
  */
 
+/** @typedef {{id: string, url: string, alt: string}} LibraryImage */
+
 /** @returns {LocationFormValues} */
 export const createEmptyForm = () => ({
   name: '',
@@ -51,11 +53,29 @@ export const serializeForm = (form) => {
   return payload;
 };
 
+const FILES_QUERY = `
+  query locationLibraryImages($first: Int!, $after: String) {
+    files(first: $first, after: $after, query: "media_type:IMAGE") {
+      edges {
+        node {
+          ... on MediaImage { id image { url altText } }
+        }
+      }
+      pageInfo { hasNextPage endCursor }
+    }
+  }`;
+
 /**
- * @param {{form: LocationFormValues, onChange: (field: keyof LocationFormValues, value: string | boolean | string[]) => void, filesUrl?: string, disabled?: boolean}} props
+ * @param {{form: LocationFormValues, onChange: (field: keyof LocationFormValues, value: string | boolean | string[]) => void, disabled?: boolean}} props
  */
-export default function LocationForm({form, onChange, filesUrl = '', disabled = false}) {
+export default function LocationForm({form, onChange, disabled = false}) {
   const [imageInput, setImageInput] = useState('');
+  const [library, setLibrary] = useState(/** @type {LibraryImage[]} */ ([]));
+  const [libraryCursor, setLibraryCursor] = useState(/** @type {string | null} */ (null));
+  const [libraryHasMore, setLibraryHasMore] = useState(false);
+  const [libraryLoading, setLibraryLoading] = useState(false);
+  const [libraryError, setLibraryError] = useState('');
+  const [librarySelected, setLibrarySelected] = useState(/** @type {Set<string>} */ (new Set()));
 
   /** @param {keyof LocationFormValues} field @returns {(event: Event) => void} */
   const update = (field) => (event) => onChange(field, /** @type {HTMLInputElement} */ (event.currentTarget).value);
@@ -70,6 +90,41 @@ export default function LocationForm({form, onChange, filesUrl = '', disabled = 
   /** @param {number} index */
   const removeImage = (index) => onChange('imageUrls', form.imageUrls.filter((_, item) => item !== index));
 
+  /** @param {string | null} [after] */
+  const loadLibrary = async (after = null) => {
+    setLibraryLoading(true);
+    setLibraryError('');
+    try {
+      const result = await shopify.query(FILES_QUERY, {variables: {first: 24, after}});
+      if (result.errors?.length) throw new Error(result.errors[0].message);
+      const files = /** @type {any} */ (result.data)?.files;
+      const items = (files?.edges ?? [])
+        .map(/** @param {any} edge */ (edge) => edge?.node)
+        .filter(/** @param {any} node */ (node) => node?.image?.url)
+        .map(/** @param {any} node */ (node) => ({id: node.id, url: node.image.url, alt: node.image.altText ?? ''}));
+      setLibrary((current) => after ? [...current, ...items] : items);
+      setLibraryCursor(files?.pageInfo?.endCursor ?? null);
+      setLibraryHasMore(Boolean(files?.pageInfo?.hasNextPage));
+    } catch (error) {
+      setLibraryError(error instanceof Error ? error.message : 'Could not load files');
+    } finally {
+      setLibraryLoading(false);
+    }
+  };
+
+  /** @param {string} id */
+  const toggleLibraryImage = (id) => setLibrarySelected((current) => {
+    const next = new Set(current);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+
+  const addLibrarySelection = () => {
+    const urls = library.filter((file) => librarySelected.has(file.id)).map((file) => file.url).filter((url) => !form.imageUrls.includes(url));
+    if (urls.length) onChange('imageUrls', [...form.imageUrls, ...urls]);
+    setLibrarySelected(new Set());
+  };
+
   return (
     <div>
       <s-section heading="Storefront display">
@@ -78,10 +133,7 @@ export default function LocationForm({form, onChange, filesUrl = '', disabled = 
         <s-url-field label="Button link (defaults to Google Maps directions)" value={form.buttonUrl} placeholder="https://…" onInput={update('buttonUrl')} disabled={disabled}></s-url-field>
       </s-section>
       <s-section heading="Images">
-        <s-paragraph>
-          Add one or more images shown in the storefront location modal.
-          {filesUrl ? <span> Copy a file URL from <s-link href={filesUrl} target="_blank">Content → Files</s-link> and paste it below.</span> : null}
-        </s-paragraph>
+        <s-paragraph>Select images from your Shopify Files library, or paste an image URL. They appear in the storefront location modal.</s-paragraph>
         {form.imageUrls.length > 0 && (
           <s-stack direction="inline" gap="base">
             {form.imageUrls.map((url, index) => (
@@ -92,11 +144,30 @@ export default function LocationForm({form, onChange, filesUrl = '', disabled = 
             ))}
           </s-stack>
         )}
+        <s-stack direction="inline" gap="base">
+          <s-button type="button" commandFor="dm-image-picker" command="--show" onClick={() => { if (!library.length && !libraryLoading) void loadLibrary(); }} disabled={disabled}>Select from library</s-button>
+        </s-stack>
         <s-grid gridTemplateColumns="1fr auto" gap="base" alignItems="end">
           <s-url-field label="Image URL" value={imageInput} placeholder="https://cdn.shopify.com/…" onInput={(event) => setImageInput(event.currentTarget.value)} disabled={disabled}></s-url-field>
           <s-button type="button" onClick={addImage} disabled={disabled || !imageInput.trim()}>Add image</s-button>
         </s-grid>
       </s-section>
+      <s-modal id="dm-image-picker" heading="Select images from Files">
+        {libraryError && <s-banner tone="critical">{libraryError}</s-banner>}
+        {libraryLoading && !library.length && <s-spinner accessibilityLabel="Loading files" />}
+        {!libraryLoading && !library.length && !libraryError && <s-paragraph>No images found in Content → Files.</s-paragraph>}
+        <s-grid gridTemplateColumns="repeat(4, 1fr)" gap="small">
+          {library.map((file) => (
+            <s-clickable key={file.id} onClick={() => toggleLibraryImage(file.id)}>
+              <s-thumbnail src={file.url} alt={file.alt || 'Library image'} size="large"></s-thumbnail>
+              {librarySelected.has(file.id) && <s-badge tone="success">Selected</s-badge>}
+            </s-clickable>
+          ))}
+        </s-grid>
+        {libraryHasMore && <s-button type="button" loading={libraryLoading} onClick={() => void loadLibrary(libraryCursor)}>Load more</s-button>}
+        <s-button slot="secondary-actions" commandFor="dm-image-picker" command="--hide">Cancel</s-button>
+        <s-button slot="primary-action" variant="primary" commandFor="dm-image-picker" command="--hide" onClick={addLibrarySelection} disabled={!librarySelected.size}>Add selected</s-button>
+      </s-modal>
       <s-section heading="Address">
         <s-text-field label="Address" value={form.addressLine1} onInput={update('addressLine1')} required disabled={disabled}></s-text-field>
         <s-text-field label="Address line 2" value={form.addressLine2} onInput={update('addressLine2')} disabled={disabled}></s-text-field>

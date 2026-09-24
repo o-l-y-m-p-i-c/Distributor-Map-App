@@ -1,7 +1,7 @@
 import {useEffect, useState} from 'preact/hooks';
 import {useRoute} from 'preact-iso';
 import LocationForm, {createEmptyForm, serializeForm} from '../components/LocationForm.jsx';
-import {fetchWithIdToken, getFilesUrl} from '../lib/shopify.js';
+import {fetchWithIdToken} from '../lib/shopify.js';
 
 const apiUrl = 'https://distributor-map-app.onrender.com/api/admin/locations';
 
@@ -12,12 +12,7 @@ export default function EditLocationPage() {
   const {params} = useRoute();
   const id = params?.id;
   const [form, setForm] = useState(createEmptyForm());
-  const [filesUrl, setFilesUrl] = useState('');
   const [state, setState] = useState({loading: true, saving: false, error: '', success: false});
-
-  useEffect(() => {
-    void getFilesUrl().then(setFilesUrl);
-  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -60,7 +55,7 @@ export default function EditLocationPage() {
       {state.loading && <s-spinner accessibilityLabel="Loading location" />}
       {!state.loading && !state.error && (
         <div>
-          <LocationForm form={form} onChange={update} filesUrl={filesUrl} disabled={state.saving} />
+          <LocationForm form={form} onChange={update} disabled={state.saving} />
           <s-stack direction="inline" gap="base">
             <s-button type="button" variant="primary" loading={state.saving} onClick={() => void submit()}>Save changes</s-button>
             <s-button type="button" href="/locations">Back to locations</s-button>
