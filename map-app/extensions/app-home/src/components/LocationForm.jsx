@@ -9,6 +9,7 @@ import {useState} from 'preact/hooks';
  * @property {string[]} phones
  * @property {string[]} emails
  * @property {string[]} websites
+ * @property {Record<string, string>} customValues
  * @property {string} addressLine1
  * @property {string} city
  * @property {string} postalCode
@@ -31,6 +32,7 @@ export const createEmptyForm = () => {
     phones: Array(),
     emails: Array(),
     websites: Array(),
+    customValues: {},
     addressLine1: '',
     city: '',
     postalCode: '',
@@ -59,6 +61,12 @@ export const serializeForm = (form) => {
   payload.websites = form.websites.map(normalizeUrl).filter((url) => url != null);
   payload.buttonUrl = normalizeUrl(form.buttonUrl);
   payload.imageUrls = form.imageUrls.map(normalizeUrl).filter((url) => url != null);
+  /** @type {Record<string, string>} */
+  const customValues = {};
+  for (const [key, value] of Object.entries(form.customValues ?? {})) {
+    if (typeof value === 'string' && value.trim()) customValues[key] = value.trim();
+  }
+  payload.customValues = customValues;
   return payload;
 };
 
@@ -109,9 +117,23 @@ function TextListField({label, values, onChange, placeholder = '', disabled = fa
 }
 
 /**
- * @param {{form: LocationFormValues, onChange: (field: keyof LocationFormValues, value: string | boolean | string[]) => void, disabled?: boolean}} props
+ * Input for a single custom field, picked by its configured type.
+ * @param {{field: {id: string, label: string, type: string}, value: string, onChange: (value: string) => void, disabled?: boolean}} props
  */
-export default function LocationForm({form, onChange, disabled = false}) {
+function CustomFieldInput({field, value, onChange, disabled = false}) {
+  /** @param {Event} event */
+  const input = (event) => onChange(/** @type {HTMLInputElement} */ (event.currentTarget).value);
+  if (field.type === 'textarea') return <s-text-area label={field.label} value={value} rows={3} onInput={input} disabled={disabled}></s-text-area>;
+  if (field.type === 'url') return <s-url-field label={field.label} value={value} placeholder="https://…" onInput={input} disabled={disabled}></s-url-field>;
+  if (field.type === 'email') return <s-email-field label={field.label} value={value} onInput={input} disabled={disabled}></s-email-field>;
+  if (field.type === 'number') return <s-number-field label={field.label} value={value} onInput={input} disabled={disabled}></s-number-field>;
+  return <s-text-field label={field.label} value={value} onInput={input} disabled={disabled}></s-text-field>;
+}
+
+/**
+ * @param {{form: LocationFormValues, onChange: (field: keyof LocationFormValues, value: string | boolean | string[] | Record<string, string>) => void, disabled?: boolean, customSections?: {id: string, title: string, fields: {id: string, label: string, type: string}[]}[]}} props
+ */
+export default function LocationForm({form, onChange, disabled = false, customSections = Array()}) {
   const [imageInput, setImageInput] = useState('');
   const [library, setLibrary] = useState(/** @type {LibraryImage[]} */ ([]));
   const [libraryCursor, setLibraryCursor] = useState(/** @type {string | null} */ (null));
@@ -228,6 +250,19 @@ export default function LocationForm({form, onChange, disabled = false}) {
         <TextListField label="Email address" values={form.emails} onChange={(values) => onChange('emails', values)} placeholder="store@example.com" disabled={disabled} />
         <TextListField label="Website" values={form.websites} onChange={(values) => onChange('websites', values)} placeholder="https://…" disabled={disabled} />
       </s-section>
+      {customSections.map((section) => (
+        <s-section key={section.id} heading={section.title}>
+          {section.fields.map((field) => (
+            <CustomFieldInput
+              key={field.id}
+              field={field}
+              value={form.customValues?.[field.id] ?? ''}
+              onChange={(value) => onChange('customValues', {...form.customValues, [field.id]: value})}
+              disabled={disabled}
+            />
+          ))}
+        </s-section>
+      ))}
       <s-section heading="Visibility">
         <s-select label="Location type" value={form.type} onChange={update('type')} disabled={disabled}>
           <s-option value="store">Store</s-option>

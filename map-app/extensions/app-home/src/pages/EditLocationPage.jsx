@@ -4,15 +4,24 @@ import LocationForm, {createEmptyForm, serializeForm} from '../components/Locati
 import {fetchWithIdToken} from '../lib/shopify.js';
 
 const apiUrl = 'https://distributor-map-app.onrender.com/api/admin/locations';
+const settingsUrl = 'https://distributor-map-app.onrender.com/api/admin/settings';
 
-/** @type {(Exclude<keyof import('../components/LocationForm.jsx').LocationFormValues, 'published' | 'imageUrls' | 'phones' | 'emails' | 'websites'>)[]} */
+/** @type {(Exclude<keyof import('../components/LocationForm.jsx').LocationFormValues, 'published' | 'imageUrls' | 'phones' | 'emails' | 'websites' | 'customValues'>)[]} */
 const textFields = ['name', 'description', 'buttonUrl', 'addressLine1', 'city', 'postalCode', 'country', 'countryCode', 'type'];
 
 export default function EditLocationPage() {
   const {params} = useRoute();
   const id = params?.id;
   const [form, setForm] = useState(createEmptyForm());
+  const [customSections, setCustomSections] = useState(Array());
   const [state, setState] = useState({loading: true, saving: false, error: '', success: false});
+
+  useEffect(() => {
+    fetchWithIdToken(settingsUrl, {headers: {accept: 'application/json'}})
+      .then(async (response) => (response.ok ? response.json() : null))
+      .then((payload) => setCustomSections(Array.isArray(payload?.customSections) ? payload.customSections : []))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -24,7 +33,7 @@ export default function EditLocationPage() {
       .then((payload) => {
         const location = payload?.location ?? {};
         setForm((current) => {
-          const next = {...current, published: Boolean(location.published), imageUrls: Array.isArray(location.imageUrls) ? location.imageUrls : location.imageUrl ? [location.imageUrl] : [], phones: Array.isArray(location.phones) ? location.phones : location.phone ? [location.phone] : [], emails: Array.isArray(location.emails) ? location.emails : location.email ? [location.email] : [], websites: Array.isArray(location.websites) ? location.websites : location.website ? [location.website] : []};
+          const next = {...current, published: Boolean(location.published), imageUrls: Array.isArray(location.imageUrls) ? location.imageUrls : location.imageUrl ? [location.imageUrl] : [], phones: Array.isArray(location.phones) ? location.phones : location.phone ? [location.phone] : [], emails: Array.isArray(location.emails) ? location.emails : location.email ? [location.email] : [], websites: Array.isArray(location.websites) ? location.websites : location.website ? [location.website] : [], customValues: location.customValues && typeof location.customValues === 'object' ? location.customValues : {}};
           for (const field of textFields) next[field] = location[field] ?? '';
           return next;
         });
@@ -33,7 +42,7 @@ export default function EditLocationPage() {
       .catch((requestError) => setState({loading: false, saving: false, error: requestError instanceof Error ? requestError.message : 'Unable to load location', success: false}));
   }, [id]);
 
-  /** @param {keyof import('../components/LocationForm.jsx').LocationFormValues} field @param {string | boolean | string[]} value */
+  /** @param {keyof import('../components/LocationForm.jsx').LocationFormValues} field @param {string | boolean | string[] | Record<string, string>} value */
   const update = (field, value) => setForm((current) => ({...current, [field]: value}));
 
   const submit = async () => {
@@ -55,7 +64,7 @@ export default function EditLocationPage() {
       {state.loading && <s-spinner accessibilityLabel="Loading location" />}
       {!state.loading && !state.error && (
         <div>
-          <LocationForm form={form} onChange={update} disabled={state.saving} />
+          <LocationForm form={form} onChange={update} disabled={state.saving} customSections={customSections} />
           <s-stack direction="inline" gap="base">
             <s-button type="button" variant="primary" loading={state.saving} onClick={() => void submit()}>Save changes</s-button>
             <s-button type="button" href="/locations">Back to locations</s-button>

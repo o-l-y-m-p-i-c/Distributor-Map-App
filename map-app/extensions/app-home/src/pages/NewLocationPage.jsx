@@ -1,14 +1,23 @@
-import {useState} from 'preact/hooks';
+import {useEffect, useState} from 'preact/hooks';
 import LocationForm, {createEmptyForm, serializeForm} from '../components/LocationForm.jsx';
 import {fetchWithIdToken} from '../lib/shopify.js';
 
 const apiUrl = 'https://distributor-map-app.onrender.com/api/admin/locations';
+const settingsUrl = 'https://distributor-map-app.onrender.com/api/admin/settings';
 
 export default function NewLocationPage() {
   const [form, setForm] = useState(createEmptyForm());
+  const [customSections, setCustomSections] = useState(Array());
   const [state, setState] = useState({loading: false, error: '', success: false, geocoded: true});
 
-  /** @param {keyof import('../components/LocationForm.jsx').LocationFormValues} field @param {string | boolean | string[]} value */
+  useEffect(() => {
+    fetchWithIdToken(settingsUrl, {headers: {accept: 'application/json'}})
+      .then(async (response) => (response.ok ? response.json() : null))
+      .then((payload) => setCustomSections(Array.isArray(payload?.customSections) ? payload.customSections : []))
+      .catch(() => {});
+  }, []);
+
+  /** @param {keyof import('../components/LocationForm.jsx').LocationFormValues} field @param {string | boolean | string[] | Record<string, string>} value */
   const update = (field, value) => setForm((current) => ({...current, [field]: value}));
 
   const submit = async () => {
@@ -33,7 +42,7 @@ export default function NewLocationPage() {
         </s-banner>
       )}
       {state.error && <s-banner tone="critical" heading="Could not create location">{state.error}</s-banner>}
-      <LocationForm form={form} onChange={update} disabled={state.loading} />
+      <LocationForm form={form} onChange={update} disabled={state.loading} customSections={customSections} />
       <s-button type="button" variant="primary" loading={state.loading} onClick={() => void submit()}>Create location</s-button>
     </s-page>
   );

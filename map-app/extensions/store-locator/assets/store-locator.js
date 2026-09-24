@@ -55,6 +55,23 @@
     const modalBody = modal.querySelector('[data-dm-modal-body]');
 
     const closeModal = () => { modal.hidden = true; };
+
+    let storefrontSettings = null;
+    const settingsEndpoint = endpoint.replace(/\/search$/, '/settings');
+    if (settingsEndpoint !== endpoint) {
+      fetch(settingsEndpoint, {headers: {Accept: 'application/json'}})
+        .then((response) => (response.ok ? response.json() : null))
+        .then((payload) => {
+          storefrontSettings = payload;
+          const config = payload?.modalConfig ?? {};
+          if (config.backgroundColor) root.style.setProperty('--dm-modal-bg', config.backgroundColor);
+          if (config.textColor) root.style.setProperty('--dm-modal-ink', config.textColor);
+          if (config.accentColor) root.style.setProperty('--dm-modal-accent', config.accentColor);
+          if (Number.isFinite(config.borderRadius)) root.style.setProperty('--dm-modal-radius', `${config.borderRadius}px`);
+          if (Number.isFinite(config.width)) root.style.setProperty('--dm-modal-width', `${config.width}px`);
+        })
+        .catch(() => {});
+    }
     modal.addEventListener('click', (event) => {
       if (event.target.closest('[data-dm-modal-close]')) { closeModal(); return; }
       const thumb = event.target.closest('[data-dm-modal-thumb]');
@@ -78,29 +95,60 @@
       return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressOf(location))}`;
     };
 
+    /** @param {{id: string, label: string, type: string}} field @param {string} value */
+    const customFieldHtml = (field, value) => {
+      const escaped = escapeHtml(value);
+      let rendered = `<span>${escaped}</span>`;
+      if (field.type === 'url') rendered = `<a href="${escaped}" target="_blank" rel="noopener noreferrer">${escaped}</a>`;
+      if (field.type === 'email') rendered = `<a href="mailto:${escaped}">${escaped}</a>`;
+      if (field.type === 'phone') rendered = `<a href="tel:${escaped}">${escaped}</a>`;
+      return `<div class="dm-locator__modal-field"><span class="dm-locator__modal-field-label">${escapeHtml(field.label)}</span>${rendered}</div>`;
+    };
+
     const openModal = (location) => {
       const address = addressOf(location);
       const images = Array.isArray(location.imageUrls) && location.imageUrls.length ? location.imageUrls : (location.imageUrl ? [location.imageUrl] : []);
       const phones = Array.isArray(location.phones) ? location.phones : location.phone ? [location.phone] : [];
       const emails = Array.isArray(location.emails) ? location.emails : location.email ? [location.email] : [];
       const websites = Array.isArray(location.websites) ? location.websites : location.website ? [location.website] : [];
-      modalBody.innerHTML = `
-        ${images.length ? `<div class="dm-locator__modal-gallery">
+      const customValues = location.customValues && typeof location.customValues === 'object' ? location.customValues : {};
+      const customSections = Array.isArray(storefrontSettings?.customSections) ? storefrontSettings.customSections : [];
+
+      const parts = {
+        gallery: images.length ? `<div class="dm-locator__modal-gallery">
           <img class="dm-locator__modal-image" src="${escapeHtml(images[0])}" alt="${escapeHtml(location.name)}" loading="lazy">
           ${images.length > 1 ? `<div class="dm-locator__modal-thumbs">${images.map((url, index) => `<img class="dm-locator__modal-thumb${index === 0 ? ' is-active' : ''}" src="${escapeHtml(url)}" data-dm-modal-thumb="${escapeHtml(url)}" alt="${escapeHtml(location.name)} ${index + 1}" loading="lazy">`).join('')}</div>` : ''}
-        </div>` : ''}
-        <div class="dm-locator__modal-content">
+        </div>` : '',
+        header: `<div class="dm-locator__modal-head">
           ${location.type ? `<span class="dm-locator__modal-type">${escapeHtml(location.type)}</span>` : ''}
           <h3 class="dm-locator__modal-title">${escapeHtml(location.name)}</h3>
-          ${location.description ? `<p class="dm-locator__modal-description">${escapeHtml(location.description)}</p>` : ''}
-          ${address ? `<address class="dm-locator__modal-address">${escapeHtml(address)}</address>` : ''}
-          <div class="dm-locator__modal-meta">
-            ${phones.map((phone) => `<a href="tel:${escapeHtml(phone)}">${escapeHtml(phone)}</a>`).join('')}
-            ${emails.map((email) => `<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>`).join('')}
-            ${websites.map((site, index) => `<a href="${escapeHtml(site)}" target="_blank" rel="noopener noreferrer">Website${websites.length > 1 ? ` ${index + 1}` : ''}</a>`).join('')}
-          </div>
-          <a class="dm-locator__modal-directions" href="${escapeHtml(directionsUrl(location))}" target="_blank" rel="noopener noreferrer">Get directions</a>
-        </div>`;
+        </div>`,
+        description: location.description ? `<p class="dm-locator__modal-description">${escapeHtml(location.description)}</p>` : '',
+        address: address ? `<address class="dm-locator__modal-address">${escapeHtml(address)}</address>` : '',
+        contacts: (() => {
+          const links = [
+            ...(storefrontSettings?.showPhone === false ? [] : phones).map((phone) => `<a href="tel:${escapeHtml(phone)}">${escapeHtml(phone)}</a>`),
+            ...emails.map((email) => `<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>`),
+            ...(storefrontSettings?.showWebsite === false ? [] : websites).map((site, index) => `<a href="${escapeHtml(site)}" target="_blank" rel="noopener noreferrer">Website${websites.length > 1 ? ` ${index + 1}` : ''}</a>`),
+          ];
+          return links.length ? `<div class="dm-locator__modal-meta">${links.join('')}</div>` : '';
+        })(),
+        directions: storefrontSettings?.showDirections === false ? '' : `<a class="dm-locator__modal-directions" href="${escapeHtml(directionsUrl(location))}" target="_blank" rel="noopener noreferrer">Get directions</a>`,
+      };
+      for (const section of customSections) {
+        const rows = (section.fields ?? []).map((field) => { const value = String(customValues[field.id] ?? '').trim(); return value ? customFieldHtml(field, value) : ''; }).join('');
+        parts[`section:${section.id}`] = rows ? `<div class="dm-locator__modal-custom"><h4 class="dm-locator__modal-custom-title">${escapeHtml(section.title)}</h4>${rows}</div>` : '';
+      }
+
+      const defaultOrder = ['gallery', 'header', 'description', 'address', 'contacts', 'directions', ...customSections.map((section) => `section:${section.id}`)];
+      const configured = Array.isArray(storefrontSettings?.modalConfig?.sections) ? storefrontSettings.modalConfig.sections : [];
+      const order = [...configured.filter((key) => key in parts), ...defaultOrder.filter((key) => !configured.includes(key))];
+      const hidden = new Set(Array.isArray(storefrontSettings?.modalConfig?.hidden) ? storefrontSettings.modalConfig.hidden : []);
+      const shown = order.filter((key) => !hidden.has(key) && parts[key]);
+
+      modalBody.innerHTML = shown
+        .map((key) => (key === 'gallery' ? parts[key] : `<div class="dm-locator__modal-section">${parts[key]}</div>`))
+        .join('');
       modal.hidden = false;
     };
 
