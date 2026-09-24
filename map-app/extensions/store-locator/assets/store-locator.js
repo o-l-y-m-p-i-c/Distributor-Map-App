@@ -113,42 +113,87 @@
       const websites = Array.isArray(location.websites) ? location.websites : location.website ? [location.website] : [];
       const customValues = location.customValues && typeof location.customValues === 'object' ? location.customValues : {};
       const customSections = Array.isArray(storefrontSettings?.customSections) ? storefrontSettings.customSections : [];
+      const fieldById = new Map(customSections.flatMap((section) => (section.fields ?? []).map((field) => [field.id, field])));
+      const sectionById = new Map(customSections.map((section) => [section.id, section]));
 
-      const parts = {
+      const linkRow = (links) => (links.length ? `<div class="dm-locator__modal-meta">${links.join('')}</div>` : '');
+      const phoneLinks = phones.map((phone) => `<a href="tel:${escapeHtml(phone)}">${escapeHtml(phone)}</a>`);
+      const emailLinks = emails.map((email) => `<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>`);
+      const websiteLinks = websites.map((site, index) => `<a href="${escapeHtml(site)}" target="_blank" rel="noopener noreferrer">Website${websites.length > 1 ? ` ${index + 1}` : ''}</a>`);
+
+      const outputs = {
         gallery: images.length ? `<div class="dm-locator__modal-gallery">
           <img class="dm-locator__modal-image" src="${escapeHtml(images[0])}" alt="${escapeHtml(location.name)}" loading="lazy">
           ${images.length > 1 ? `<div class="dm-locator__modal-thumbs">${images.map((url, index) => `<img class="dm-locator__modal-thumb${index === 0 ? ' is-active' : ''}" src="${escapeHtml(url)}" data-dm-modal-thumb="${escapeHtml(url)}" alt="${escapeHtml(location.name)} ${index + 1}" loading="lazy">`).join('')}</div>` : ''}
         </div>` : '',
-        header: `<div class="dm-locator__modal-head">
-          ${location.type ? `<span class="dm-locator__modal-type">${escapeHtml(location.type)}</span>` : ''}
-          <h3 class="dm-locator__modal-title">${escapeHtml(location.name)}</h3>
-        </div>`,
+        type: location.type ? `<span class="dm-locator__modal-type">${escapeHtml(location.type)}</span>` : '',
+        name: `<h3 class="dm-locator__modal-title">${escapeHtml(location.name)}</h3>`,
         description: location.description ? `<p class="dm-locator__modal-description">${escapeHtml(location.description)}</p>` : '',
         address: address ? `<address class="dm-locator__modal-address">${escapeHtml(address)}</address>` : '',
-        contacts: (() => {
-          const links = [
-            ...(storefrontSettings?.showPhone === false ? [] : phones).map((phone) => `<a href="tel:${escapeHtml(phone)}">${escapeHtml(phone)}</a>`),
-            ...emails.map((email) => `<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>`),
-            ...(storefrontSettings?.showWebsite === false ? [] : websites).map((site, index) => `<a href="${escapeHtml(site)}" target="_blank" rel="noopener noreferrer">Website${websites.length > 1 ? ` ${index + 1}` : ''}</a>`),
-          ];
-          return links.length ? `<div class="dm-locator__modal-meta">${links.join('')}</div>` : '';
-        })(),
+        phones: storefrontSettings?.showPhone === false ? '' : linkRow(phoneLinks),
+        emails: linkRow(emailLinks),
+        websites: storefrontSettings?.showWebsite === false ? '' : linkRow(websiteLinks),
+        contacts: linkRow([
+          ...(storefrontSettings?.showPhone === false ? [] : phoneLinks),
+          ...emailLinks,
+          ...(storefrontSettings?.showWebsite === false ? [] : websiteLinks),
+        ]),
         directions: storefrontSettings?.showDirections === false ? '' : `<a class="dm-locator__modal-directions" href="${escapeHtml(directionsUrl(location))}" target="_blank" rel="noopener noreferrer">Get directions</a>`,
       };
-      for (const section of customSections) {
-        const rows = (section.fields ?? []).map((field) => { const value = String(customValues[field.id] ?? '').trim(); return value ? customFieldHtml(field, value) : ''; }).join('');
-        parts[`section:${section.id}`] = rows ? `<div class="dm-locator__modal-custom"><h4 class="dm-locator__modal-custom-title">${escapeHtml(section.title)}</h4>${rows}</div>` : '';
+
+      /** @param {string} source */
+      const sourceHtml = (source) => {
+        if (source in outputs) return outputs[source];
+        if (source.startsWith('field:')) {
+          const field = fieldById.get(source.slice(6));
+          const value = String(customValues[source.slice(6)] ?? '').trim();
+          return field && value ? customFieldHtml(field, value) : '';
+        }
+        if (source.startsWith('section:')) {
+          const section = sectionById.get(source.slice(8));
+          if (!section) return '';
+          const rows = (section.fields ?? []).map((field) => { const value = String(customValues[field.id] ?? '').trim(); return value ? customFieldHtml(field, value) : ''; }).join('');
+          return rows ? `<div class="dm-locator__modal-custom"><h4 class="dm-locator__modal-custom-title">${escapeHtml(section.title)}</h4>${rows}</div>` : '';
+        }
+        return '';
+      };
+
+      // Resolve the block list: configured blocks, or legacy section order.
+      const configured = storefrontSettings?.modalConfig ?? {};
+      let blocks = Array.isArray(configured.blocks) && configured.blocks.length ? configured.blocks : null;
+      if (!blocks) {
+        const defaultOrder = ['gallery', 'header', 'description', 'address', 'contacts', 'directions', ...customSections.map((section) => `section:${section.id}`)];
+        const savedOrder = Array.isArray(configured.sections) ? configured.sections : [];
+        const order = [...savedOrder.filter((key) => key in outputs || key.startsWith('section:')), ...defaultOrder.filter((key) => !savedOrder.includes(key))];
+        const hiddenKeys = new Set(Array.isArray(configured.hidden) ? configured.hidden : []);
+        blocks = order.flatMap((key) => (key === 'header'
+          ? [{type: 'field', source: 'type', hidden: hiddenKeys.has('header')}, {type: 'field', source: 'name', hidden: hiddenKeys.has('header')}]
+          : [{type: 'field', source: key, hidden: hiddenKeys.has(key)}]));
       }
 
-      const defaultOrder = ['gallery', 'header', 'description', 'address', 'contacts', 'directions', ...customSections.map((section) => `section:${section.id}`)];
-      const configured = Array.isArray(storefrontSettings?.modalConfig?.sections) ? storefrontSettings.modalConfig.sections : [];
-      const order = [...configured.filter((key) => key in parts), ...defaultOrder.filter((key) => !configured.includes(key))];
-      const hidden = new Set(Array.isArray(storefrontSettings?.modalConfig?.hidden) ? storefrontSettings.modalConfig.hidden : []);
-      const shown = order.filter((key) => !hidden.has(key) && parts[key]);
+      const blockStyle = (block) => (block.color ? ` style="--dm-block-accent:${escapeHtml(block.color)};--dm-block-ink:${escapeHtml(block.color)}"` : '');
 
-      modalBody.innerHTML = shown
-        .map((key) => (key === 'gallery' ? parts[key] : `<div class="dm-locator__modal-section">${parts[key]}</div>`))
-        .join('');
+      /** @param {{type: string, text?: string, source?: string, label?: string, color?: string, size?: string}} block */
+      const renderBlock = (block) => {
+        const ink = block.color ? ` style="color:${escapeHtml(block.color)}"` : '';
+        if (block.type === 'header') {
+          const size = block.size === 'large' ? 'large' : block.size === 'small' ? 'small' : 'base';
+          return `<div class="dm-locator__modal-section"><h4 class="dm-locator__modal-heading dm-locator__modal-heading--${size}"${ink}>${escapeHtml(block.text ?? '')}</h4></div>`;
+        }
+        if (block.type === 'text') return block.text ? `<div class="dm-locator__modal-section"><p class="dm-locator__modal-text"${ink}>${escapeHtml(block.text)}</p></div>` : '';
+        if (block.type === 'divider') return `<div class="dm-locator__modal-section"><hr class="dm-locator__modal-divider"${block.color ? ` style="border-color:${escapeHtml(block.color)}"` : ''}></div>`;
+        if (block.type === 'spacer') return '<div class="dm-locator__modal-spacer"></div>';
+        if (block.type === 'field') {
+          if (block.source === 'gallery') return outputs.gallery;
+          const inner = sourceHtml(block.source ?? '');
+          if (!inner) return '';
+          const label = block.label ? `<span class="dm-locator__modal-block-label">${escapeHtml(block.label)}</span>` : '';
+          return `<div class="dm-locator__modal-section"${blockStyle(block)}>${label}${inner}</div>`;
+        }
+        return '';
+      };
+
+      modalBody.innerHTML = blocks.filter((block) => !block.hidden).map(renderBlock).join('');
       modal.hidden = false;
     };
 

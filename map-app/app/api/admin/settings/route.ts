@@ -35,6 +35,16 @@ const settingsSchema = z.object({
     width: z.number().int().min(280).max(900).optional(),
     sections: z.array(z.string().trim().min(1).max(80)).max(40).optional(),
     hidden: z.array(z.string().trim().min(1).max(80)).max(40).optional(),
+    blocks: z.array(z.object({
+      id: z.string().trim().min(1).max(60),
+      type: z.enum(['header', 'text', 'field', 'divider', 'spacer']),
+      text: z.string().trim().max(500).optional(),
+      source: z.string().trim().max(80).optional(),
+      label: z.string().trim().max(120).optional(),
+      color: z.string().regex(/^#[0-9a-f]{6}$/i).optional().or(z.literal('')),
+      size: z.enum(['small', 'base', 'large']).optional(),
+      hidden: z.boolean().optional(),
+    })).max(60).optional(),
   }).optional(),
 });
 

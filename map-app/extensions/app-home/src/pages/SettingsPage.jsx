@@ -5,13 +5,48 @@ const settingsUrl = 'https://distributor-map-app.onrender.com/api/admin/settings
 
 const FIELD_TYPES = ['text', 'textarea', 'url', 'email', 'phone', 'number'];
 
-const BUILTIN_SECTIONS = [
-  {key: 'gallery', label: 'Image gallery'},
-  {key: 'header', label: 'Title & type'},
-  {key: 'description', label: 'Description'},
-  {key: 'address', label: 'Address'},
-  {key: 'contacts', label: 'Contact links'},
-  {key: 'directions', label: 'Directions button'},
+const BLOCK_TYPES = [
+  {value: 'header', label: 'Header'},
+  {value: 'text', label: 'Text'},
+  {value: 'field', label: 'Location output'},
+  {value: 'divider', label: 'Divider'},
+  {value: 'spacer', label: 'Spacer'},
+];
+
+/** @type {Record<string, string>} */
+const BLOCK_TYPE_LABELS = {header: 'Header', text: 'Text', field: 'Output', divider: 'Divider', spacer: 'Spacer'};
+
+const FIELD_SOURCES = [
+  {value: 'gallery', label: 'Image gallery'},
+  {value: 'type', label: 'Location type badge'},
+  {value: 'name', label: 'Location name'},
+  {value: 'description', label: 'Description'},
+  {value: 'address', label: 'Address'},
+  {value: 'phones', label: 'Phone numbers'},
+  {value: 'emails', label: 'Email addresses'},
+  {value: 'websites', label: 'Websites'},
+  {value: 'contacts', label: 'Contact links (all)'},
+  {value: 'directions', label: 'Directions button'},
+];
+
+const HEADER_SIZES = ['small', 'base', 'large'];
+
+/**
+ * Create a full-shape block so every literal shares one inferred type.
+ * @param {string} type @param {string} [source]
+ * @returns {ModalBlock}
+ */
+const makeBlock = (type, source = '') => ({id: uid(), type, text: '', source, label: '', color: '', size: 'base', hidden: false});
+
+/** @returns {ModalBlock[]} */
+const defaultBlocks = () => [
+  makeBlock('field', 'gallery'),
+  makeBlock('field', 'type'),
+  makeBlock('field', 'name'),
+  makeBlock('field', 'description'),
+  makeBlock('field', 'address'),
+  makeBlock('field', 'contacts'),
+  makeBlock('field', 'directions'),
 ];
 
 const DEFAULT_MODAL = {
@@ -20,75 +55,75 @@ const DEFAULT_MODAL = {
   accentColor: '#176274',
   borderRadius: 18,
   width: 480,
-  sections: ['gallery', 'header', 'description', 'address', 'contacts', 'directions'],
-  hidden: Array(),
+  blocks: Array(),
 };
 
 /** @typedef {{id: string, label: string, type: string}} CustomField */
 /** @typedef {{id: string, title: string, fields: CustomField[]}} CustomSection */
-/** @typedef {{backgroundColor: string, textColor: string, accentColor: string, borderRadius: number, width: number, sections: string[], hidden: string[]}} ModalConfig */
+/** @typedef {{id: string, type: string, text?: string, source?: string, label?: string, color?: string, size?: string, hidden?: boolean}} ModalBlock */
+/** @typedef {{backgroundColor: string, textColor: string, accentColor: string, borderRadius: number, width: number, blocks: ModalBlock[]}} ModalConfig */
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
 /**
- * Move an item in an array.
- * @param {string[]} list @param {number} index @param {number} delta @returns {string[]}
+ * Convert the legacy sections-order config into blocks.
+ * @param {string[]} order @param {string[]} hiddenKeys @returns {ModalBlock[]}
  */
-const moveItem = (list, index, delta) => {
-  const next = [...list];
-  const target = index + delta;
-  if (target < 0 || target >= next.length) return next;
-  [next[index], next[target]] = [next[target], next[index]];
-  return next;
+const legacyOrderToBlocks = (order, hiddenKeys) => {
+  const hidden = new Set(hiddenKeys);
+  /** @type {ModalBlock[]} */
+  const blocks = [];
+  for (const key of order) {
+    const sources = key === 'header' ? ['type', 'name'] : [key];
+    for (const source of sources) {
+      const block = makeBlock('field', source);
+      block.hidden = hidden.has(key);
+      blocks.push(block);
+    }
+  }
+  return blocks;
 };
 
 /**
- * Live preview mock of the storefront modal rendered from the current config.
- * @param {{modal: ModalConfig, order: string[], labels: Record<string, string>}} props
+ * Live preview mock of the storefront modal rendered from the current blocks.
+ * @param {{modal: ModalConfig, sourceLabels: Record<string, string>}} props
  */
-function ModalPreview({modal, order, labels}) {
+function ModalPreview({modal, sourceLabels}) {
   /** @param {string} width @param {string} [color] @param {number} [height] */
   const bar = (width, color = '#d8e8ec', height = 7) => (
     <div style={{width, height: `${height}px`, background: color, borderRadius: '4px', marginBottom: '6px'}}></div>
   );
-  const hidden = new Set(modal.hidden);
 
-  /** @param {string} key */
-  const previewFor = (key) => {
-    if (key === 'gallery') return <div style={{height: '90px', background: 'linear-gradient(135deg,#c5d8de,#8fb4bf)'}}></div>;
-    if (key === 'header') return (
-      <div style={{padding: '0 16px'}}>
-        <div style={{fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '4px', color: modal.accentColor}}>Store</div>
-        <div style={{fontSize: '14px', fontWeight: 700}}>Location name</div>
-      </div>
-    );
-    if (key === 'description') return <div style={{padding: '0 16px'}}>{bar('100%')}{bar('90%')}{bar('60%')}</div>;
-    if (key === 'address') return <div style={{padding: '0 16px'}}>{bar('75%', '#b9cdd4')}</div>;
-    if (key === 'contacts') return (
-      <div style={{display: 'flex', gap: '6px', padding: '0 16px', flexWrap: 'wrap'}}>
-        {['Phone', 'Email', 'Website'].map((item) => (
-          <span key={item} style={{color: modal.accentColor, fontSize: '10px', fontWeight: 600}}>{item}</span>
-        ))}
-      </div>
-    );
-    if (key === 'directions') return (
-      <div style={{padding: '4px 16px 16px'}}>
-        <span style={{display: 'inline-block', background: modal.accentColor, color: '#fff', borderRadius: '999px', padding: '7px 16px', fontSize: '10px', fontWeight: 700}}>Get directions</span>
-      </div>
-    );
-    if (key.startsWith('section:')) return (
-      <div style={{padding: '0 16px'}}>
-        <div style={{fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '6px', color: modal.accentColor}}>{labels[key]}</div>
-        {bar('80%')}{bar('55%')}
-      </div>
-    );
-    return null;
+  /** @param {ModalBlock} block */
+  const previewFor = (block) => {
+    const color = block.color || '';
+    if (block.type === 'header') {
+      const fontSize = block.size === 'large' ? '16px' : block.size === 'small' ? '10px' : '13px';
+      return <div style={{padding: '0 16px', fontSize, fontWeight: 700, color: color || modal.textColor}}>{block.text || 'Heading'}</div>;
+    }
+    if (block.type === 'text') return <div style={{padding: '0 16px'}}>{bar('100%', color || '#d8e8ec')}{bar('70%', color || '#d8e8ec')}</div>;
+    if (block.type === 'divider') return <div style={{margin: '0 16px', borderTop: `1px solid ${color || '#d8e8ec'}`}}></div>;
+    if (block.type === 'spacer') return <div style={{height: '10px'}}></div>;
+    // field blocks
+    const source = block.source ?? '';
+    const label = block.label ? <div style={{fontSize: '8px', fontWeight: 700, color: modal.textColor, opacity: .55, marginBottom: '3px'}}>{block.label}</div> : null;
+    let body = bar('70%', color || '#b9cdd4');
+    if (source === 'gallery') body = <div style={{height: '90px', background: 'linear-gradient(135deg,#c5d8de,#8fb4bf)', borderRadius: color ? '6px' : 0}}></div>;
+    if (source === 'type') body = <span style={{fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em', color: color || modal.accentColor}}>Store</span>;
+    if (source === 'name') body = <div style={{fontSize: '14px', fontWeight: 700, color: color || modal.textColor}}>Location name</div>;
+    if (source === 'description') body = <div>{bar('100%', color)}{bar('90%', color)}{bar('60%', color)}</div>;
+    if (source === 'contacts' || source === 'phones' || source === 'emails' || source === 'websites') body = <span style={{color: color || modal.accentColor, fontSize: '10px', fontWeight: 600}}>{sourceLabels[source] ?? 'Link'}</span>;
+    if (source === 'directions') body = <span style={{display: 'inline-block', background: color || modal.accentColor, color: '#fff', borderRadius: '999px', padding: '7px 16px', fontSize: '10px', fontWeight: 700}}>Get directions</span>;
+    if (source.startsWith('field:') || source.startsWith('section:')) body = <div>{bar('80%', color)}{bar('55%', color)}</div>;
+    const padded = source !== 'gallery';
+    return <div style={padded ? {padding: '0 16px'} : {}}>{label}{body}</div>;
   };
 
   return (
     <div style={{display: 'flex', justifyContent: 'center', padding: '8px 0'}}>
       <div style={{width: '250px', background: modal.backgroundColor, color: modal.textColor, borderRadius: `${modal.borderRadius}px`, overflow: 'hidden', border: '1px solid #d8e8ec', boxShadow: '0 12px 32px rgba(9,38,51,.18)'}}>
-        {order.filter((key) => !hidden.has(key)).map((key) => <div key={key} style={{marginBottom: '12px'}}>{previewFor(key)}</div>)}
+        {modal.blocks.filter((block) => !block.hidden).map((block) => <div key={block.id} style={{marginBottom: '12px'}}>{previewFor(block)}</div>)}
+        {!modal.blocks.filter((block) => !block.hidden).length && <div style={{padding: '24px 16px', fontSize: '10px', color: '#66808b'}}>No visible blocks</div>}
       </div>
     </div>
   );
@@ -96,7 +131,8 @@ function ModalPreview({modal, order, labels}) {
 
 export default function SettingsPage() {
   const [sections, setSections] = useState(/** @type {CustomSection[]} */ ([]));
-  const [modal, setModal] = useState(DEFAULT_MODAL);
+  const [modal, setModal] = useState({...DEFAULT_MODAL, blocks: defaultBlocks()});
+  const [newBlockType, setNewBlockType] = useState('header');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -109,8 +145,21 @@ export default function SettingsPage() {
         return response.json();
       })
       .then((payload) => {
-        setSections(Array.isArray(payload?.customSections) ? payload.customSections : []);
-        setModal({...DEFAULT_MODAL, ...(payload?.modalConfig ?? {})});
+        const nextSections = Array.isArray(payload?.customSections) ? payload.customSections : [];
+        const config = payload?.modalConfig ?? {};
+        setSections(nextSections);
+        /** @type {ModalBlock[]} */
+        let blocks = Array.isArray(config.blocks) && config.blocks.length ? config.blocks : Array();
+        if (!blocks.length) {
+          const legacyOrder = Array.isArray(config.sections) && config.sections.length ? config.sections : Array();
+          const customKeys = nextSections.map((/** @type {CustomSection} */ section) => `section:${section.id}`);
+          const order = [...legacyOrder, ...customKeys.filter((/** @type {string} */ key) => !legacyOrder.includes(key))];
+          blocks = order.length ? legacyOrderToBlocks(order, Array.isArray(config.hidden) ? config.hidden : Array()) : defaultBlocks();
+          for (const section of nextSections) {
+            if (!blocks.some((block) => block.source === `section:${section.id}`)) blocks.push(makeBlock('field', `section:${section.id}`));
+          }
+        }
+        setModal({...DEFAULT_MODAL, ...config, blocks});
         setLoading(false);
       })
       .catch((requestError) => {
@@ -160,30 +209,43 @@ export default function SettingsPage() {
   /** @param {number} sectionIndex @param {number} fieldIndex */
   const removeField = (sectionIndex, fieldIndex) => setSections((current) => current.map((section, i) => (i === sectionIndex ? {...section, fields: section.fields.filter((_, j) => j !== fieldIndex)} : section)));
 
-  // --- modal config helpers -----------------------------------------------------
+  // --- modal block helpers ------------------------------------------------------
 
-  /** @param {keyof ModalConfig} key @param {string | number | string[]} value */
-  const patchModal = (key, value) => setModal((current) => ({...current, [key]: value}));
+  /** @param {'backgroundColor' | 'textColor' | 'accentColor' | 'borderRadius' | 'width'} key @param {string | number} value */
+  const patchModalKey = (key, value) => setModal((current) => ({...current, [key]: value}));
 
-  const allKeys = [...BUILTIN_SECTIONS.map((item) => item.key), ...sections.map((section) => `section:${section.id}`)];
+  /** @param {number} index @param {Partial<ModalBlock>} patch */
+  const patchBlock = (index, patch) => setModal((current) => ({...current, blocks: current.blocks.map((block, i) => (i === index ? {...block, ...patch} : block))}));
+
+  const addBlock = () => {
+    const block = makeBlock(newBlockType, newBlockType === 'field' ? 'name' : '');
+    if (newBlockType === 'header') block.text = 'Heading';
+    setModal((current) => ({...current, blocks: [...current.blocks, block]}));
+  };
+
+  /** @param {number} index */
+  const removeBlock = (index) => setModal((current) => ({...current, blocks: current.blocks.filter((_, i) => i !== index)}));
+
+  /** @param {number} index @param {number} delta */
+  const moveBlock = (index, delta) => setModal((current) => {
+    const next = [...current.blocks];
+    const target = index + delta;
+    if (target < 0 || target >= next.length) return current;
+    [next[index], next[target]] = [next[target], next[index]];
+    return {...current, blocks: next};
+  });
+
+  // Field source options: built-ins + custom fields and sections from the constructor
+  const sourceOptions = [
+    ...FIELD_SOURCES,
+    ...sections.flatMap((section) => [
+      {value: `section:${section.id}`, label: `Section — ${section.title}`},
+      ...section.fields.map((field) => ({value: `field:${field.id}`, label: `${section.title} → ${field.label}`})),
+    ]),
+  ];
   /** @type {Record<string, string>} */
-  const labels = {};
-  for (const item of BUILTIN_SECTIONS) labels[item.key] = item.label;
-  for (const section of sections) labels[`section:${section.id}`] = section.title;
-  const savedOrder = Array.isArray(modal.sections) ? modal.sections : [];
-  const order = [...savedOrder.filter((key) => allKeys.includes(key)), ...allKeys.filter((key) => !savedOrder.includes(key))];
-  const hiddenSet = new Set(modal.hidden);
-
-  /** @param {string} key @param {number} delta */
-  const moveModalSection = (key, delta) => {
-    const index = order.indexOf(key);
-    patchModal('sections', moveItem(order, index, delta));
-  };
-
-  /** @param {string} key @param {boolean} visible */
-  const toggleModalSection = (key, visible) => {
-    patchModal('hidden', visible ? [...hiddenSet].filter((item) => item !== key) : [...hiddenSet, key]);
-  };
+  const sourceLabels = {};
+  for (const option of sourceOptions) sourceLabels[option.value] = option.label;
 
   return (
     <s-page heading="Settings">
@@ -194,7 +256,7 @@ export default function SettingsPage() {
 
       {!loading && (
         <s-section heading="Location data constructor">
-          <s-paragraph>Create custom sections with typed fields. They appear on the location form and are rendered inside the storefront modal.</s-paragraph>
+          <s-paragraph>Create custom sections with typed fields. They appear on the location form and can be placed inside the storefront modal below.</s-paragraph>
           <s-stack direction="block" gap="base">
             {sections.map((section, sectionIndex) => (
               <s-box key={section.id} padding="base" borderWidth="base" borderRadius="base">
@@ -227,32 +289,69 @@ export default function SettingsPage() {
         <s-section heading="Storefront modal">
           <s-paragraph>Customize the location detail modal. The preview updates as you edit.</s-paragraph>
           <s-grid gridTemplateColumns="1fr 1fr 1fr" gap="base">
-            <s-color-field label="Background" value={modal.backgroundColor} onChange={(event) => patchModal('backgroundColor', event.currentTarget.value)}></s-color-field>
-            <s-color-field label="Text" value={modal.textColor} onChange={(event) => patchModal('textColor', event.currentTarget.value)}></s-color-field>
-            <s-color-field label="Accent (links &amp; buttons)" value={modal.accentColor} onChange={(event) => patchModal('accentColor', event.currentTarget.value)}></s-color-field>
+            <s-color-field label="Background" value={modal.backgroundColor} onChange={(event) => patchModalKey('backgroundColor', event.currentTarget.value)}></s-color-field>
+            <s-color-field label="Text" value={modal.textColor} onChange={(event) => patchModalKey('textColor', event.currentTarget.value)}></s-color-field>
+            <s-color-field label="Accent (links &amp; buttons)" value={modal.accentColor} onChange={(event) => patchModalKey('accentColor', event.currentTarget.value)}></s-color-field>
           </s-grid>
           <s-grid gridTemplateColumns="1fr 1fr" gap="base">
-            <s-number-field label="Corner radius (px)" value={String(modal.borderRadius)} min={0} max={40} onChange={(event) => patchModal('borderRadius', Number(event.currentTarget.value))}></s-number-field>
-            <s-number-field label="Max width (px)" value={String(modal.width)} min={280} max={900} onChange={(event) => patchModal('width', Number(event.currentTarget.value))}></s-number-field>
+            <s-number-field label="Corner radius (px)" value={String(modal.borderRadius)} min={0} max={40} onChange={(event) => patchModalKey('borderRadius', Number(event.currentTarget.value))}></s-number-field>
+            <s-number-field label="Max width (px)" value={String(modal.width)} min={280} max={900} onChange={(event) => patchModalKey('width', Number(event.currentTarget.value))}></s-number-field>
           </s-grid>
+        </s-section>
+      )}
 
-          <s-stack direction="block" gap="small">
-            <s-text type="strong">Section placement</s-text>
-            {order.map((key, index) => (
-              <s-grid key={key} gridTemplateColumns="auto 1fr auto auto" gap="small" alignItems="center">
-                <s-checkbox checked={!hiddenSet.has(key)} onChange={(event) => toggleModalSection(key, event.currentTarget.checked)} accessibilityLabel={`Show ${labels[key]}`}></s-checkbox>
-                <s-text>{labels[key]}</s-text>
-                <s-button type="button" icon="arrow-up" accessibilityLabel="Move up" onClick={() => moveModalSection(key, -1)} disabled={index === 0}></s-button>
-                <s-button type="button" icon="arrow-down" accessibilityLabel="Move down" onClick={() => moveModalSection(key, 1)} disabled={index === order.length - 1}></s-button>
-              </s-grid>
+      {!loading && (
+        <s-section heading="Modal layout constructor">
+          <s-paragraph>Build the modal from blocks: headers, free text, outputs bound to location data, and dividers. Reorder them and set a color for each.</s-paragraph>
+          <s-stack direction="block" gap="base">
+            {modal.blocks.map((block, index) => (
+              <s-box key={block.id} padding="base" borderWidth="base" borderRadius="base" background={block.hidden ? 'subdued' : 'base'}>
+                <s-stack direction="block" gap="small">
+                  <s-grid gridTemplateColumns="auto 1fr auto auto auto" gap="small" alignItems="center">
+                    <s-checkbox checked={!block.hidden} onChange={(event) => patchBlock(index, {hidden: !event.currentTarget.checked})} accessibilityLabel="Show block"></s-checkbox>
+                    <s-text type="strong">{BLOCK_TYPE_LABELS[block.type] ?? block.type}{block.type === 'field' && block.source ? ` — ${sourceLabels[block.source] ?? block.source}` : ''}</s-text>
+                    <s-button type="button" icon="arrow-up" accessibilityLabel="Move block up" onClick={() => moveBlock(index, -1)} disabled={index === 0}></s-button>
+                    <s-button type="button" icon="arrow-down" accessibilityLabel="Move block down" onClick={() => moveBlock(index, 1)} disabled={index === modal.blocks.length - 1}></s-button>
+                    <s-button type="button" tone="critical" icon="delete" accessibilityLabel="Remove block" onClick={() => removeBlock(index)}></s-button>
+                  </s-grid>
+                  {block.type === 'header' && (
+                    <s-grid gridTemplateColumns="1fr 160px" gap="small">
+                      <s-text-field label="Heading text" value={block.text ?? ''} onInput={(event) => patchBlock(index, {text: event.currentTarget.value})}></s-text-field>
+                      <s-select label="Size" value={block.size ?? 'base'} onChange={(event) => patchBlock(index, {size: event.currentTarget.value})}>
+                        {HEADER_SIZES.map((size) => <s-option key={size} value={size}>{size}</s-option>)}
+                      </s-select>
+                    </s-grid>
+                  )}
+                  {block.type === 'text' && (
+                    <s-text-area label="Content" value={block.text ?? ''} rows={2} onInput={(event) => patchBlock(index, {text: event.currentTarget.value})}></s-text-area>
+                  )}
+                  {block.type === 'field' && (
+                    <s-grid gridTemplateColumns="1fr 1fr" gap="small">
+                      <s-select label="Output" value={block.source ?? 'name'} onChange={(event) => patchBlock(index, {source: event.currentTarget.value})}>
+                        {sourceOptions.map((option) => <s-option key={option.value} value={option.value}>{option.label}</s-option>)}
+                      </s-select>
+                      <s-text-field label="Label (optional)" value={block.label ?? ''} placeholder="Shown above the value" onInput={(event) => patchBlock(index, {label: event.currentTarget.value})}></s-text-field>
+                    </s-grid>
+                  )}
+                  {block.type !== 'spacer' && (
+                    <s-color-field label="Color" value={block.color ?? ''} onChange={(event) => patchBlock(index, {color: event.currentTarget.value})}></s-color-field>
+                  )}
+                </s-stack>
+              </s-box>
             ))}
+            <s-grid gridTemplateColumns="1fr auto" gap="small" alignItems="end">
+              <s-select label="Add block" value={newBlockType} onChange={(event) => setNewBlockType(event.currentTarget.value)}>
+                {BLOCK_TYPES.map((type) => <s-option key={type.value} value={type.value}>{type.label}</s-option>)}
+              </s-select>
+              <s-button type="button" onClick={addBlock}>Add block</s-button>
+            </s-grid>
           </s-stack>
         </s-section>
       )}
 
       {!loading && (
         <s-section heading="Preview">
-          <ModalPreview modal={modal} order={order} labels={labels} />
+          <ModalPreview modal={modal} sourceLabels={sourceLabels} />
         </s-section>
       )}
     </s-page>
