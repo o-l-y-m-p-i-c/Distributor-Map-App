@@ -43,6 +43,12 @@ declare module './src/pages/ImportPage.jsx' {
 }
 
 //@ts-ignore
+declare module './src/lib/shopify.js' {
+  const shopify: import('@shopify/ui-extensions/admin.app.home.render').Api;
+  const globalThis: { shopify: typeof shopify };
+}
+
+//@ts-ignore
 declare module './src/components/LocationForm.jsx' {
   const shopify: import('@shopify/ui-extensions/admin.app.home.render').Api;
   const globalThis: { shopify: typeof shopify };

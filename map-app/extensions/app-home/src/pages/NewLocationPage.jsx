@@ -1,20 +1,19 @@
-import {useState} from 'preact/hooks';
+import {useEffect, useState} from 'preact/hooks';
 import LocationForm, {createEmptyForm, serializeForm} from '../components/LocationForm.jsx';
+import {fetchWithIdToken, getFilesUrl} from '../lib/shopify.js';
 
 const apiUrl = 'https://distributor-map-app.onrender.com/api/admin/locations';
 
-/** @param {string} url @param {RequestInit} [options] */
-const fetchWithIdToken = async (url, options = {}) => {
-  const token = await shopify.auth.idToken();
-  if (!token) throw new Error('Shopify authentication token unavailable');
-  return fetch(url, {...options, headers: {...options.headers, Authorization: `Bearer ${token}`}});
-};
-
 export default function NewLocationPage() {
   const [form, setForm] = useState(createEmptyForm());
+  const [filesUrl, setFilesUrl] = useState('');
   const [state, setState] = useState({loading: false, error: '', success: false, geocoded: true});
 
-  /** @param {keyof import('../components/LocationForm.jsx').LocationFormValues} field @param {string | boolean} value */
+  useEffect(() => {
+    void getFilesUrl().then(setFilesUrl);
+  }, []);
+
+  /** @param {keyof import('../components/LocationForm.jsx').LocationFormValues} field @param {string | boolean | string[]} value */
   const update = (field, value) => setForm((current) => ({...current, [field]: value}));
 
   const submit = async () => {
@@ -39,7 +38,7 @@ export default function NewLocationPage() {
         </s-banner>
       )}
       {state.error && <s-banner tone="critical" heading="Could not create location">{state.error}</s-banner>}
-      <LocationForm form={form} onChange={update} disabled={state.loading} />
+      <LocationForm form={form} onChange={update} filesUrl={filesUrl} disabled={state.loading} />
       <s-button type="button" variant="primary" loading={state.loading} onClick={() => void submit()}>Create location</s-button>
     </s-page>
   );

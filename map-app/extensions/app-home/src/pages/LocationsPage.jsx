@@ -1,13 +1,7 @@
 import {useEffect, useState} from 'preact/hooks';
+import {fetchWithIdToken} from '../lib/shopify.js';
 
 const apiUrl = 'https://distributor-map-app.onrender.com/api/admin/locations';
-
-/** @param {string} url @param {RequestInit} [options] */
-const fetchWithIdToken = async (url, options = {}) => {
-  const token = await shopify.auth.idToken();
-  if (!token) throw new Error('Shopify authentication token unavailable');
-  return fetch(url, {...options, headers: {...options.headers, Authorization: `Bearer ${token}`}});
-};
 
 /** @typedef {{id: string, name: string, city: string, country: string, type: string, published: boolean}} Location */
 /** @typedef {{items?: Location[]}} LocationResponse */

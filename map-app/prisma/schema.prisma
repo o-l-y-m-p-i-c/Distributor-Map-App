@@ -41,7 +41,7 @@ model Location {
   email          String?
   website        String?
   description    String?
-  imageUrl       String?
+  imageUrls      String[]               @default([])
   buttonUrl      String?
   type           String
   published      Boolean                @default(false)

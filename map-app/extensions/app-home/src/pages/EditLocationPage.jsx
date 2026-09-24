@@ -1,24 +1,23 @@
 import {useEffect, useState} from 'preact/hooks';
 import {useRoute} from 'preact-iso';
 import LocationForm, {createEmptyForm, serializeForm} from '../components/LocationForm.jsx';
+import {fetchWithIdToken, getFilesUrl} from '../lib/shopify.js';
 
 const apiUrl = 'https://distributor-map-app.onrender.com/api/admin/locations';
 
-/** @param {string} url @param {RequestInit} [options] */
-const fetchWithIdToken = async (url, options = {}) => {
-  const token = await shopify.auth.idToken();
-  if (!token) throw new Error('Shopify authentication token unavailable');
-  return fetch(url, {...options, headers: {...options.headers, Authorization: `Bearer ${token}`}});
-};
-
-/** @type {(Exclude<keyof import('../components/LocationForm.jsx').LocationFormValues, 'published'>)[]} */
-const textFields = ['name', 'description', 'imageUrl', 'buttonUrl', 'phone', 'email', 'website', 'addressLine1', 'addressLine2', 'city', 'state', 'postalCode', 'country', 'countryCode', 'type'];
+/** @type {(Exclude<keyof import('../components/LocationForm.jsx').LocationFormValues, 'published' | 'imageUrls'>)[]} */
+const textFields = ['name', 'description', 'buttonUrl', 'phone', 'email', 'website', 'addressLine1', 'addressLine2', 'city', 'state', 'postalCode', 'country', 'countryCode', 'type'];
 
 export default function EditLocationPage() {
   const {params} = useRoute();
   const id = params?.id;
   const [form, setForm] = useState(createEmptyForm());
+  const [filesUrl, setFilesUrl] = useState('');
   const [state, setState] = useState({loading: true, saving: false, error: '', success: false});
+
+  useEffect(() => {
+    void getFilesUrl().then(setFilesUrl);
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -30,7 +29,7 @@ export default function EditLocationPage() {
       .then((payload) => {
         const location = payload?.location ?? {};
         setForm((current) => {
-          const next = {...current, published: Boolean(location.published)};
+          const next = {...current, published: Boolean(location.published), imageUrls: Array.isArray(location.imageUrls) ? location.imageUrls : location.imageUrl ? [location.imageUrl] : []};
           for (const field of textFields) next[field] = location[field] ?? '';
           return next;
         });
@@ -39,7 +38,7 @@ export default function EditLocationPage() {
       .catch((requestError) => setState({loading: false, saving: false, error: requestError instanceof Error ? requestError.message : 'Unable to load location', success: false}));
   }, [id]);
 
-  /** @param {keyof import('../components/LocationForm.jsx').LocationFormValues} field @param {string | boolean} value */
+  /** @param {keyof import('../components/LocationForm.jsx').LocationFormValues} field @param {string | boolean | string[]} value */
   const update = (field, value) => setForm((current) => ({...current, [field]: value}));
 
   const submit = async () => {
@@ -61,7 +60,7 @@ export default function EditLocationPage() {
       {state.loading && <s-spinner accessibilityLabel="Loading location" />}
       {!state.loading && !state.error && (
         <div>
-          <LocationForm form={form} onChange={update} disabled={state.saving} />
+          <LocationForm form={form} onChange={update} filesUrl={filesUrl} disabled={state.saving} />
           <s-stack direction="inline" gap="base">
             <s-button type="button" variant="primary" loading={state.saving} onClick={() => void submit()}>Save changes</s-button>
             <s-button type="button" href="/locations">Back to locations</s-button>

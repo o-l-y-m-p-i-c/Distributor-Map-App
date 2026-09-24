@@ -20,7 +20,7 @@ const locationUpdateSchema = z.object({
   email: z.string().email().max(254).nullable().optional(),
   website: z.string().url().max(2048).nullable().optional(),
   description: z.string().trim().max(5000).nullable().optional(),
-  imageUrl: z.string().url().max(2048).nullable().optional(),
+  imageUrls: z.array(z.string().url().max(2048)).max(50).optional(),
   buttonUrl: z.string().url().max(2048).nullable().optional(),
   type: z.string().trim().min(1).max(80).optional(),
   published: z.boolean().optional(),

@@ -1,13 +1,7 @@
 import {useState} from 'preact/hooks';
+import {fetchWithIdToken} from '../lib/shopify.js';
 
 const baseUrl = 'https://distributor-map-app.onrender.com/api/admin/import';
-
-/** @param {string} url @param {RequestInit} [options] */
-const fetchWithIdToken = async (url, options = {}) => {
-  const token = await shopify.auth.idToken();
-  if (!token) throw new Error('Shopify authentication token unavailable');
-  return fetch(url, {...options, headers: {...options.headers, Authorization: `Bearer ${token}`}});
-};
 
 /**
  * @typedef {{row: number, valid: boolean, data?: Record<string, string>, errors?: string[]}} PreviewRow

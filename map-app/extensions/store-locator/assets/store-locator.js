@@ -56,7 +56,13 @@
 
     const closeModal = () => { modal.hidden = true; };
     modal.addEventListener('click', (event) => {
-      if (event.target.closest('[data-dm-modal-close]')) closeModal();
+      if (event.target.closest('[data-dm-modal-close]')) { closeModal(); return; }
+      const thumb = event.target.closest('[data-dm-modal-thumb]');
+      if (thumb) {
+        const main = modal.querySelector('.dm-locator__modal-image');
+        if (main) main.src = thumb.dataset.dmModalThumb;
+        modal.querySelectorAll('.dm-locator__modal-thumb').forEach((item) => item.classList.toggle('is-active', item === thumb));
+      }
     });
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') closeModal();
@@ -74,8 +80,12 @@
 
     const openModal = (location) => {
       const address = addressOf(location);
+      const images = Array.isArray(location.imageUrls) && location.imageUrls.length ? location.imageUrls : (location.imageUrl ? [location.imageUrl] : []);
       modalBody.innerHTML = `
-        ${location.imageUrl ? `<img class="dm-locator__modal-image" src="${escapeHtml(location.imageUrl)}" alt="${escapeHtml(location.name)}" loading="lazy">` : ''}
+        ${images.length ? `<div class="dm-locator__modal-gallery">
+          <img class="dm-locator__modal-image" src="${escapeHtml(images[0])}" alt="${escapeHtml(location.name)}" loading="lazy">
+          ${images.length > 1 ? `<div class="dm-locator__modal-thumbs">${images.map((url, index) => `<img class="dm-locator__modal-thumb${index === 0 ? ' is-active' : ''}" src="${escapeHtml(url)}" data-dm-modal-thumb="${escapeHtml(url)}" alt="${escapeHtml(location.name)} ${index + 1}" loading="lazy">`).join('')}</div>` : ''}
+        </div>` : ''}
         <div class="dm-locator__modal-content">
           ${location.type ? `<span class="dm-locator__modal-type">${escapeHtml(location.type)}</span>` : ''}
           <h3 class="dm-locator__modal-title">${escapeHtml(location.name)}</h3>

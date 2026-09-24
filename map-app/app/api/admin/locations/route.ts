@@ -20,7 +20,7 @@ const createLocationSchema = z.object({
   email: z.string().email().max(254).optional().nullable(),
   website: z.string().url().max(2048).optional().nullable(),
   description: z.string().trim().max(5000).optional().nullable(),
-  imageUrl: z.string().url().max(2048).optional().nullable(),
+  imageUrls: z.array(z.string().url().max(2048)).max(50).optional(),
   buttonUrl: z.string().url().max(2048).optional().nullable(),
   type: z.string().trim().min(1).max(80).default('store'),
   published: z.boolean().default(false),
