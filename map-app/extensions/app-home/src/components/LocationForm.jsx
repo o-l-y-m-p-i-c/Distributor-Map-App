@@ -10,9 +10,7 @@ import {useState} from 'preact/hooks';
  * @property {string} email
  * @property {string} website
  * @property {string} addressLine1
- * @property {string} addressLine2
  * @property {string} city
- * @property {string} state
  * @property {string} postalCode
  * @property {string} country
  * @property {string} countryCode
@@ -32,9 +30,7 @@ export const createEmptyForm = () => ({
   email: '',
   website: '',
   addressLine1: '',
-  addressLine2: '',
   city: '',
-  state: '',
   postalCode: '',
   country: '',
   countryCode: '',
@@ -179,16 +175,14 @@ export default function LocationForm({form, onChange, disabled = false}) {
       </s-modal>
       <s-section heading="Address">
         <s-text-field label="Address" value={form.addressLine1} onInput={update('addressLine1')} required disabled={disabled}></s-text-field>
-        <s-text-field label="Address line 2" value={form.addressLine2} onInput={update('addressLine2')} disabled={disabled}></s-text-field>
         <s-grid gridTemplateColumns="1fr 1fr" gap="base">
           <s-text-field label="City" value={form.city} onInput={update('city')} required disabled={disabled}></s-text-field>
           <s-text-field label="Postal code" value={form.postalCode} onInput={update('postalCode')} required disabled={disabled}></s-text-field>
         </s-grid>
         <s-grid gridTemplateColumns="1fr 1fr" gap="base">
-          <s-text-field label="State / region" value={form.state} onInput={update('state')} disabled={disabled}></s-text-field>
           <s-text-field label="Country" value={form.country} onInput={update('country')} required disabled={disabled}></s-text-field>
+          <s-text-field label="Country code" value={form.countryCode} onInput={(event) => onChange('countryCode', event.currentTarget.value.toUpperCase())} required disabled={disabled}></s-text-field>
         </s-grid>
-        <s-text-field label="Country code" value={form.countryCode} onInput={(event) => onChange('countryCode', event.currentTarget.value.toUpperCase())} required disabled={disabled}></s-text-field>
       </s-section>
       <s-section heading="Contact">
         <s-grid gridTemplateColumns="1fr 1fr" gap="base">

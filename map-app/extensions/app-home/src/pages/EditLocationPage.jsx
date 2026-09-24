@@ -6,7 +6,7 @@ import {fetchWithIdToken} from '../lib/shopify.js';
 const apiUrl = 'https://distributor-map-app.onrender.com/api/admin/locations';
 
 /** @type {(Exclude<keyof import('../components/LocationForm.jsx').LocationFormValues, 'published' | 'imageUrls'>)[]} */
-const textFields = ['name', 'description', 'buttonUrl', 'phone', 'email', 'website', 'addressLine1', 'addressLine2', 'city', 'state', 'postalCode', 'country', 'countryCode', 'type'];
+const textFields = ['name', 'description', 'buttonUrl', 'phone', 'email', 'website', 'addressLine1', 'city', 'postalCode', 'country', 'countryCode', 'type'];
 
 export default function EditLocationPage() {
   const {params} = useRoute();
