@@ -2,7 +2,7 @@
   class="dm-locator"
   data-dm-locator
   data-endpoint="/apps/distributor-map/search"
-  style="--dm-primary: {{ block.settings.primary_color }}; --dm-accent: {{ block.settings.accent_color }};"
+  style="--dm-primary: {{ block.settings.primary_color }}; --dm-accent: {{ block.settings.accent_color }}; --dm-list-height-desktop: {{ block.settings.list_height_desktop }}px; --dm-list-height-mobile: {{ block.settings.list_height_mobile }}px;"
   {{ block.shopify_attributes }}
 >
   <div class="dm-locator__header">
@@ -59,7 +59,9 @@
     { "type": "text", "id": "search_placeholder", "label": "Search placeholder", "default": "City, postcode, or address" },
     { "type": "checkbox", "id": "enable_geolocation", "label": "Show use location button", "default": true },
     { "type": "color", "id": "primary_color", "label": "Primary color", "default": "#176274" },
-    { "type": "color", "id": "accent_color", "label": "Accent color", "default": "#4ca9ba" }
+    { "type": "color", "id": "accent_color", "label": "Accent color", "default": "#4ca9ba" },
+    { "type": "range", "id": "list_height_desktop", "label": "Locations height on desktop", "min": 280, "max": 1000, "step": 10, "unit": "px", "default": 540 },
+    { "type": "range", "id": "list_height_mobile", "label": "Locations height on mobile", "min": 240, "max": 1000, "step": 10, "unit": "px", "default": 500 }
   ]
 }
 {% endschema %}
