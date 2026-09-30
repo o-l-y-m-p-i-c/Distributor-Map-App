@@ -33,19 +33,12 @@
         <p class="dm-locator__eyebrow">{{ section.settings.eyebrow | escape }}</p>
       {% endif %}
 
-      {% case section.settings.heading_tag %}
-        {% when 'h1' %}<h1>{{ section.settings.heading | escape }}</h1>
-        {% when 'h3' %}<h3>{{ section.settings.heading | escape }}</h3>
-        {% when 'h4' %}<h4>{{ section.settings.heading | escape }}</h4>
-        {% else %}<h2>{{ section.settings.heading | escape }}</h2>
-      {% endcase %}
+      {% if section.settings.heading != blank %}
+        <div class="dm-locator__heading rte">{{ section.settings.heading }}</div>
+      {% endif %}
 
       {% if section.settings.description != blank %}
-        {% case section.settings.body_tag %}
-          {% when 'div' %}<div class="dm-locator__description">{{ section.settings.description | escape }}</div>
-          {% when 'span' %}<span class="dm-locator__description">{{ section.settings.description | escape }}</span>
-          {% else %}<p class="dm-locator__description">{{ section.settings.description | escape }}</p>
-        {% endcase %}
+        <div class="dm-locator__description rte">{{ section.settings.description }}</div>
       {% endif %}
     </div>
 
@@ -98,19 +91,8 @@
   "settings": [
     { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-1" },
     { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "FIND US" },
-    { "type": "text", "id": "heading", "label": "Heading", "default": "Find a distributor near you" },
-    { "type": "textarea", "id": "description", "label": "Description", "default": "Search our retail network and discover where to find PickAqua." },
-    { "type": "select", "id": "heading_tag", "label": "Heading HTML tag", "default": "h2", "options": [
-      { "value": "h1", "label": "H1" },
-      { "value": "h2", "label": "H2" },
-      { "value": "h3", "label": "H3" },
-      { "value": "h4", "label": "H4" }
-    ] },
-    { "type": "select", "id": "body_tag", "label": "Description HTML tag", "default": "p", "options": [
-      { "value": "p", "label": "Paragraph" },
-      { "value": "div", "label": "Div" },
-      { "value": "span", "label": "Span" }
-    ] },
+    { "type": "richtext", "id": "heading", "label": "Heading", "default": "<p>Find a distributor near you</p>" },
+    { "type": "richtext", "id": "description", "label": "Description", "default": "<p>Search our retail network and discover where to find PickAqua.</p>" },
     { "type": "font_picker", "id": "font_family", "label": "Base font", "default": "assistant_n4" },
     { "type": "font_picker", "id": "heading_font", "label": "Heading font", "default": "assistant_n4" },
     { "type": "font_picker", "id": "body_font", "label": "Body font", "default": "assistant_n4" },
