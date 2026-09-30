@@ -14,18 +14,7 @@
   class="dm-locator color-{{ section.settings.color_scheme }}"
   data-dm-locator
   data-endpoint="/apps/distributor-map/search"
-  style="
-    --dm-primary: {{ section.settings.primary_color }};
-    --dm-accent: {{ section.settings.accent_color }};
-    --dm-list-height-desktop: {{ section.settings.list_height_desktop }}px;
-    --dm-list-height-mobile: {{ section.settings.list_height_mobile }}px;
-    --dm-font-family: {{ section.settings.font_family.family }}, {{ section.settings.font_family.fallback_families }};
-    --dm-heading-font-family: {{ section.settings.heading_font.family }}, {{ section.settings.heading_font.fallback_families }};
-    --dm-body-font-family: {{ section.settings.body_font.family }}, {{ section.settings.body_font.fallback_families }};
-    --dm-heading-size: {{ section.settings.heading_size }}px;
-    --dm-body-size: {{ section.settings.body_size }}px;
-    --dm-heading-weight: {{ section.settings.heading_weight }};
-  "
+  style="--dm-list-height-desktop: {{ section.settings.list_height_desktop }}px; --dm-list-height-mobile: {{ section.settings.list_height_mobile }}px;"
 >
   <div class="dm-locator__header">
     <div>
@@ -93,21 +82,8 @@
     { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "FIND US" },
     { "type": "richtext", "id": "heading", "label": "Heading", "default": "<p>Find a distributor near you</p>" },
     { "type": "richtext", "id": "description", "label": "Description", "default": "<p>Search our retail network and discover where to find PickAqua.</p>" },
-    { "type": "font_picker", "id": "font_family", "label": "Base font", "default": "assistant_n4" },
-    { "type": "font_picker", "id": "heading_font", "label": "Heading font", "default": "assistant_n4" },
-    { "type": "font_picker", "id": "body_font", "label": "Body font", "default": "assistant_n4" },
-    { "type": "range", "id": "heading_size", "label": "Heading size", "min": 18, "max": 72, "step": 1, "unit": "px", "default": 48 },
-    { "type": "range", "id": "body_size", "label": "Description size", "min": 12, "max": 32, "step": 1, "unit": "px", "default": 16 },
-    { "type": "select", "id": "heading_weight", "label": "Heading weight", "default": "600", "options": [
-      { "value": "400", "label": "Normal" },
-      { "value": "500", "label": "Medium" },
-      { "value": "600", "label": "Semibold" },
-      { "value": "700", "label": "Bold" }
-    ] },
     { "type": "text", "id": "search_placeholder", "label": "Search placeholder", "default": "City, postcode, or address" },
     { "type": "checkbox", "id": "enable_geolocation", "label": "Show use location button", "default": true },
-    { "type": "color", "id": "primary_color", "label": "Primary color", "default": "#176274" },
-    { "type": "color", "id": "accent_color", "label": "Accent color", "default": "#4ca9ba" },
     { "type": "range", "id": "list_height_desktop", "label": "Locations height on desktop", "min": 280, "max": 1000, "step": 10, "unit": "px", "default": 540 },
     { "type": "range", "id": "list_height_mobile", "label": "Locations height on mobile", "min": 240, "max": 1000, "step": 10, "unit": "px", "default": 500 }
   ]
