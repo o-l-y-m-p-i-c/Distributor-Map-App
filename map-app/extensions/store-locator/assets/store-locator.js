@@ -31,6 +31,8 @@
     const empty = root.querySelector('[data-dm-empty]');
     const error = root.querySelector('[data-dm-error]');
     const mapContainer = root.querySelector('[data-dm-map]');
+    const openListButton = root.querySelector('[data-dm-open-list]');
+    const closeListButton = root.querySelector('[data-dm-close-list]');
     const endpoint = root.dataset.endpoint;
     let map;
     let locations = [];
@@ -53,7 +55,19 @@
     root.appendChild(modal);
     const modalBody = modal.querySelector('[data-dm-modal-body]');
 
-    const closeModal = () => { modal.hidden = true; };
+    const closeModal = () => {
+      modal.hidden = true;
+      document.body.classList.remove('dm-locator-modal-open');
+    };
+
+    const setListOpen = (open) => {
+      root.classList.toggle('dm-locator--list-open', open);
+      document.body.classList.toggle('dm-locator-list-open', open);
+      openListButton?.setAttribute('aria-expanded', String(open));
+    };
+
+    openListButton?.addEventListener('click', () => setListOpen(true));
+    closeListButton?.addEventListener('click', () => setListOpen(false));
 
     let storefrontSettings = null;
     const settingsEndpoint = endpoint.replace(/\/search$/, '/settings');
@@ -209,6 +223,7 @@
         })
         .join('');
       modal.hidden = false;
+      document.body.classList.add('dm-locator-modal-open');
     };
 
     const selectLocation = (id) => {
@@ -219,6 +234,7 @@
       if (map && location?.longitude != null && location?.latitude != null) {
         map.flyTo({center: [Number(location.longitude), Number(location.latitude)], zoom: 13, essential: true});
       }
+      setListOpen(false);
       return location;
     };
 
@@ -273,7 +289,7 @@
     const initializeMap = async () => {
       try {
         const maplibregl = await loadMapLibre();
-        map = new maplibregl.Map({container: mapContainer, style: 'https://tiles.openfreemap.org/styles/liberty', center: [0, 20], zoom: 1.5, attributionControl: true});
+        map = new maplibregl.Map({container: mapContainer, style: 'https://tiles.openfreemap.org/styles/liberty', center: [0, 20], zoom: 1.5, attributionControl: true, cooperativeGestures: true});
         map.addControl(new maplibregl.NavigationControl(), 'top-right');
         map.on('load', () => {
           const styles = getComputedStyle(root);

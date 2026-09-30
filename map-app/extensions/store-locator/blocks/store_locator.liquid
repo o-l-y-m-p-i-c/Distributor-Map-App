@@ -28,11 +28,16 @@
     <button type="submit">{{ 'store_locator.search' | t }}</button>
   </form>
 
+  <button type="button" class="dm-locator__mobile-list-toggle" data-dm-open-list aria-expanded="false">
+    View locations
+  </button>
+
   <div class="dm-locator__body">
-    <aside class="dm-locator__results" aria-live="polite">
+    <aside class="dm-locator__results" aria-live="polite" aria-label="Locations">
       <div class="dm-locator__results-head">
         <strong data-dm-count>0 {{ 'store_locator.locations' | t }}</strong>
         <span data-dm-status></span>
+        <button type="button" class="dm-locator__mobile-list-close" data-dm-close-list aria-label="Close locations">&#215;</button>
       </div>
       <div data-dm-list></div>
       <p class="dm-locator__empty" data-dm-empty hidden>{{ 'store_locator.empty' | t }}</p>
