@@ -49,11 +49,22 @@
         : color;
     };
     const themeStyles = getComputedStyle(root);
+    let themeSurface = '';
+    let themeForeground = '';
+    let themeNode = root.parentElement;
+    while (themeNode && (!themeSurface || !themeForeground)) {
+      const styles = getComputedStyle(themeNode);
+      const background = styles.backgroundColor;
+      const foreground = styles.color;
+      if (!themeSurface && background && !/rgba?\(0,\s*0,\s*0(?:,\s*0)?\)/.test(background)) themeSurface = background;
+      if (!themeForeground && foreground) themeForeground = foreground;
+      themeNode = themeNode.parentElement;
+    }
     const themeColors = {
-      primary: normalizeThemeColor(themeStyles.getPropertyValue('--color-button')),
-      buttonText: normalizeThemeColor(themeStyles.getPropertyValue('--color-button-text')),
-      ink: normalizeThemeColor(themeStyles.getPropertyValue('--color-foreground')),
-      muted: normalizeThemeColor(themeStyles.getPropertyValue('--color-foreground-secondary')),
+      primary: normalizeThemeColor(themeStyles.getPropertyValue('--color-button')) || themeForeground,
+      buttonText: normalizeThemeColor(themeStyles.getPropertyValue('--color-button-text')) || themeSurface,
+      ink: normalizeThemeColor(themeStyles.getPropertyValue('--color-foreground')) || themeForeground,
+      muted: normalizeThemeColor(themeStyles.getPropertyValue('--color-foreground-secondary')) || themeForeground,
     };
     Object.entries(themeColors).forEach(([name, color]) => {
       if (color) root.style.setProperty(`--dm-${name}`, color);
