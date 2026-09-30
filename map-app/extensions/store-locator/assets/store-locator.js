@@ -94,19 +94,45 @@
         modal.querySelectorAll('.dm-locator__modal-thumb').forEach((item) => item.classList.toggle('is-active', item === thumb));
       }
     });
+    modal.addEventListener('change', (event) => {
+      const select = event.target.closest('[data-dm-nav-select]');
+      if (!select || !modalLocation) return;
+      const link = modal.querySelector('[data-dm-direction-link]');
+      if (link) link.href = navigationUrl(modalLocation, select.value);
+    });
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') closeModal();
     });
 
     const addressOf = (location) => [location.addressLine1, location.city, location.state, location.postalCode, location.country].filter(Boolean).join(', ');
 
-    const directionsUrl = (location) => {
-      if (location.buttonUrl && /^https?:\/\//.test(location.buttonUrl)) return location.buttonUrl;
-      if (location.latitude != null && location.longitude != null) {
-        return `https://www.google.com/maps/dir/?api=1&destination=${Number(location.latitude)},${Number(location.longitude)}`;
-      }
-      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressOf(location))}`;
+    const navigationProvider = () => /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent) ? 'apple' : 'google';
+    const navigationUrl = (location, provider = 'auto') => {
+      if (provider === 'auto' && location.buttonUrl && /^https?:\/\//.test(location.buttonUrl)) return location.buttonUrl;
+      const hasCoordinates = location.latitude != null && location.longitude != null;
+      const coordinates = hasCoordinates ? `${Number(location.latitude)},${Number(location.longitude)}` : '';
+      const query = encodeURIComponent(addressOf(location));
+      const selectedProvider = provider === 'auto' ? navigationProvider() : provider;
+      if (selectedProvider === 'apple') return hasCoordinates ? `https://maps.apple.com/?daddr=${coordinates}` : `https://maps.apple.com/?address=${query}`;
+      if (selectedProvider === 'waze') return hasCoordinates ? `https://www.waze.com/ul?ll=${encodeURIComponent(coordinates)}&navigate=yes` : `https://www.waze.com/ul?q=${query}&navigate=yes`;
+      if (selectedProvider === 'here') return hasCoordinates ? `https://wego.here.com/directions/mix/${coordinates}` : `https://wego.here.com/search/${query}`;
+      return hasCoordinates ? `https://www.google.com/maps/dir/?api=1&destination=${coordinates}` : `https://www.google.com/maps/search/?api=1&query=${query}`;
     };
+
+    const directionsHtml = (location) => `<div class="dm-locator__directions">
+      <a class="dm-locator__modal-directions" data-dm-direction-link href="${escapeHtml(navigationUrl(location))}" target="_blank" rel="noopener noreferrer">Get directions</a>
+      <label class="dm-locator__navigation-choice">Navigation
+        <select data-dm-nav-select aria-label="Choose navigation app">
+          <option value="auto">Automatic</option>
+          <option value="google">Google Maps</option>
+          <option value="apple">Apple Maps</option>
+          <option value="waze">Waze</option>
+          <option value="here">HERE WeGo</option>
+        </select>
+      </label>
+    </div>`;
+
+    let modalLocation = null;
 
     /** @param {{id: string, label: string, type: string}} field @param {string} value */
     const customFieldHtml = (field, value) => {
@@ -119,6 +145,7 @@
     };
 
     const openModal = (location) => {
+      modalLocation = location;
       const address = addressOf(location);
       const images = Array.isArray(location.imageUrls) && location.imageUrls.length ? location.imageUrls : (location.imageUrl ? [location.imageUrl] : []);
       const phones = Array.isArray(location.phones) ? location.phones : location.phone ? [location.phone] : [];
@@ -151,7 +178,7 @@
           ...emailLinks,
           ...(storefrontSettings?.showWebsite === false ? [] : websiteLinks),
         ]),
-        directions: storefrontSettings?.showDirections === false ? '' : `<a class="dm-locator__modal-directions" href="${escapeHtml(directionsUrl(location))}" target="_blank" rel="noopener noreferrer">Get directions</a>`,
+        directions: storefrontSettings?.showDirections === false ? '' : directionsHtml(location),
       };
 
       /** @param {string} source */
@@ -232,7 +259,8 @@
       card?.classList.add('is-active');
       const location = locations.find((item) => String(item.id) === String(id));
       if (map && location?.longitude != null && location?.latitude != null) {
-        map.flyTo({center: [Number(location.longitude), Number(location.latitude)], zoom: 13, essential: true});
+        const targetZoom = Math.min(Math.max(map.getZoom() + 2, 13), 18);
+        map.flyTo({center: [Number(location.longitude), Number(location.latitude)], zoom: targetZoom, essential: true});
       }
       setListOpen(false);
       return location;
@@ -303,11 +331,16 @@
           map.addLayer({id: 'dm-points', type: 'circle', source: 'dm-locations', filter: ['!', ['has', 'point_count']], paint: {'circle-color': accent, 'circle-radius': 9, 'circle-stroke-width': 2.5, 'circle-stroke-color': '#fff'}});
           updateMap(locations);
         });
-        map.on('click', 'dm-clusters', (event) => {
+        map.on('click', 'dm-clusters', async (event) => {
           const feature = map.queryRenderedFeatures(event.point, {layers: ['dm-clusters']})[0];
-          map.getSource('dm-locations').getClusterExpansionZoom(feature.properties.cluster_id, (err, zoom) => {
-            if (!err) map.easeTo({center: feature.geometry.coordinates, zoom});
-          });
+          if (!feature) return;
+          try {
+            const source = map.getSource('dm-locations');
+            const zoom = await source.getClusterExpansionZoom(Number(feature.properties.cluster_id));
+            map.easeTo({center: feature.geometry.coordinates, zoom: Math.min(zoom, 18)});
+          } catch (clusterError) {
+            console.warn('[Store locator] Unable to expand cluster', clusterError);
+          }
         });
         map.on('click', 'dm-points', (event) => openLocationModal(event.features[0].properties.id));
         map.on('mouseenter', 'dm-clusters', () => { map.getCanvas().style.cursor = 'pointer'; });
