@@ -39,6 +39,26 @@
 
     if (!form || !list || !count || !status || !empty || !error || !mapContainer || !endpoint) return;
 
+    const normalizeThemeColor = (value) => {
+      const color = String(value ?? '').trim();
+      if (!color) return '';
+      if (/^#|^(rgb|rgba|hsl|hsla)\(/i.test(color)) return color;
+      const channels = color.replace(/,/g, ' ').split(/\s+/).filter(Boolean);
+      return channels.length === 3 && channels.every((channel) => /^\d+(?:\.\d+)?$/.test(channel))
+        ? `rgb(${channels.join(',')})`
+        : color;
+    };
+    const themeStyles = getComputedStyle(root);
+    const themeColors = {
+      primary: normalizeThemeColor(themeStyles.getPropertyValue('--color-button')),
+      buttonText: normalizeThemeColor(themeStyles.getPropertyValue('--color-button-text')),
+      ink: normalizeThemeColor(themeStyles.getPropertyValue('--color-foreground')),
+      muted: normalizeThemeColor(themeStyles.getPropertyValue('--color-foreground-secondary')),
+    };
+    Object.entries(themeColors).forEach(([name, color]) => {
+      if (color) root.style.setProperty(`--dm-${name}`, color);
+    });
+
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;',
     }[character]));
