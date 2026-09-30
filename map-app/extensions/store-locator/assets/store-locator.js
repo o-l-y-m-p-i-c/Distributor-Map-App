@@ -62,6 +62,7 @@
     }
     const themeColors = {
       primary: normalizeThemeColor(themeStyles.getPropertyValue('--color-button')) || themeForeground,
+      accent: normalizeThemeColor(themeStyles.getPropertyValue('--color-link')) || themeForeground,
       buttonText: normalizeThemeColor(themeStyles.getPropertyValue('--color-button-text')) || themeSurface,
       ink: normalizeThemeColor(themeStyles.getPropertyValue('--color-foreground')) || themeForeground,
       muted: normalizeThemeColor(themeStyles.getPropertyValue('--color-foreground-secondary')) || themeForeground,
@@ -69,6 +70,7 @@
     Object.entries(themeColors).forEach(([name, color]) => {
       if (color) root.style.setProperty(`--dm-${name}`, color);
     });
+    if (themeSurface) root.style.setProperty('--dm-surface', themeSurface);
 
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;',
@@ -85,6 +87,25 @@
       </div>`;
     root.appendChild(modal);
     const modalBody = modal.querySelector('[data-dm-modal-body]');
+    const navigationModal = document.createElement('div');
+    navigationModal.className = 'dm-locator__navigation-modal';
+    navigationModal.hidden = true;
+    navigationModal.innerHTML = `
+      <div class="dm-locator__navigation-backdrop" data-dm-navigation-close></div>
+      <div class="dm-locator__navigation-card" role="dialog" aria-modal="true" aria-labelledby="dm-navigation-title-${root.dataset.dmLocator || 'locator'}">
+        <button type="button" class="dm-locator__modal-close" data-dm-navigation-close aria-label="Close">&#215;</button>
+        <strong id="dm-navigation-title-${root.dataset.dmLocator || 'locator'}">Choose navigation app</strong>
+        <div class="dm-locator__navigation-options">
+          <button type="button" data-dm-nav-provider="auto">Automatic / System</button>
+          <button type="button" data-dm-nav-provider="google">Google Maps</button>
+          <button type="button" data-dm-nav-provider="apple">Apple Maps</button>
+          <button type="button" data-dm-nav-provider="waze">Waze</button>
+          <button type="button" data-dm-nav-provider="here">HERE WeGo</button>
+        </div>
+      </div>`;
+    root.appendChild(navigationModal);
+
+    const closeNavigationModal = () => { navigationModal.hidden = true; };
 
     const closeModal = () => {
       modal.hidden = true;
@@ -116,33 +137,58 @@
         })
         .catch(() => {});
     }
+    const loadModalImage = (url) => {
+      const gallery = modal.querySelector('.dm-locator__modal-gallery');
+      const image = modal.querySelector('.dm-locator__modal-image');
+      const backdrop = modal.querySelector('[data-dm-modal-backdrop]');
+      if (!gallery || !image) return;
+      gallery.classList.add('dm-locator__modal-gallery--loading');
+      image.classList.add('is-loading');
+      if (backdrop) backdrop.style.backgroundImage = `url(${JSON.stringify(url)})`;
+      const finish = (valid) => {
+        gallery.classList.remove('dm-locator__modal-gallery--loading');
+        image.classList.remove('is-loading');
+        image.classList.toggle('is-error', !valid);
+      };
+      image.onload = () => finish(true);
+      image.onerror = () => finish(false);
+      image.src = url;
+      if (image.complete) finish(image.naturalWidth > 0);
+    };
+
     modal.addEventListener('click', (event) => {
+      const navigationTrigger = event.target.closest('[data-dm-nav-open]');
+      if (navigationTrigger) { event.preventDefault(); navigationModal.hidden = false; return; }
       if (event.target.closest('[data-dm-modal-close]')) { closeModal(); return; }
       const thumb = event.target.closest('[data-dm-modal-thumb]');
       if (thumb) {
-        const main = modal.querySelector('.dm-locator__modal-image');
-        if (main) main.src = thumb.dataset.dmModalThumb;
+        loadModalImage(thumb.dataset.dmModalThumb);
         modal.querySelectorAll('.dm-locator__modal-thumb').forEach((item) => item.classList.toggle('is-active', item === thumb));
       }
     });
-    modal.addEventListener('change', (event) => {
-      const select = event.target.closest('[data-dm-nav-select]');
-      if (!select || !modalLocation) return;
-      const link = modal.querySelector('[data-dm-direction-link]');
-      if (link) link.href = navigationUrl(modalLocation, select.value);
+    navigationModal.addEventListener('click', (event) => {
+      if (event.target.closest('[data-dm-navigation-close]')) { closeNavigationModal(); return; }
+      const providerButton = event.target.closest('[data-dm-nav-provider]');
+      if (!providerButton || !modalLocation) return;
+      window.open(navigationUrl(modalLocation, providerButton.dataset.dmNavProvider), '_blank', 'noopener,noreferrer');
+      closeNavigationModal();
     });
     document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeNavigationModal();
       if (event.key === 'Escape') closeModal();
     });
 
     const addressOf = (location) => [location.addressLine1, location.city, location.state, location.postalCode, location.country].filter(Boolean).join(', ');
 
-    const navigationProvider = () => /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent) ? 'apple' : 'google';
+    const isAndroid = () => /Android/i.test(navigator.userAgent);
+    const isAppleDevice = () => /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent);
+    const navigationProvider = () => isAppleDevice() ? 'apple' : 'google';
     const navigationUrl = (location, provider = 'auto') => {
       if (provider === 'auto' && location.buttonUrl && /^https?:\/\//.test(location.buttonUrl)) return location.buttonUrl;
       const hasCoordinates = location.latitude != null && location.longitude != null;
       const coordinates = hasCoordinates ? `${Number(location.latitude)},${Number(location.longitude)}` : '';
       const query = encodeURIComponent(addressOf(location));
+      if (provider === 'auto' && isAndroid() && hasCoordinates) return `geo:${coordinates}?q=${encodeURIComponent(`${coordinates} (${location.name})`)}`;
       const selectedProvider = provider === 'auto' ? navigationProvider() : provider;
       if (selectedProvider === 'apple') return hasCoordinates ? `https://maps.apple.com/?daddr=${coordinates}` : `https://maps.apple.com/?address=${query}`;
       if (selectedProvider === 'waze') return hasCoordinates ? `https://www.waze.com/ul?ll=${encodeURIComponent(coordinates)}&navigate=yes` : `https://www.waze.com/ul?q=${query}&navigate=yes`;
@@ -150,17 +196,8 @@
       return hasCoordinates ? `https://www.google.com/maps/dir/?api=1&destination=${coordinates}` : `https://www.google.com/maps/search/?api=1&query=${query}`;
     };
 
-    const directionsHtml = (location) => `<div class="dm-locator__directions">
-      <a class="dm-locator__modal-directions" data-dm-direction-link href="${escapeHtml(navigationUrl(location))}" target="_blank" rel="noopener noreferrer">Get directions</a>
-      <label class="dm-locator__navigation-choice">Navigation
-        <select data-dm-nav-select aria-label="Choose navigation app">
-          <option value="auto">Automatic</option>
-          <option value="google">Google Maps</option>
-          <option value="apple">Apple Maps</option>
-          <option value="waze">Waze</option>
-          <option value="here">HERE WeGo</option>
-        </select>
-      </label>
+    const directionsHtml = () => `<div class="dm-locator__directions">
+      <button type="button" class="dm-locator__modal-directions" data-dm-nav-open>Get directions</button>
     </div>`;
 
     let modalLocation = null;
@@ -194,6 +231,7 @@
 
       const outputs = {
         gallery: images.length ? `<div class="dm-locator__modal-gallery">
+          <div class="dm-locator__modal-image-backdrop" data-dm-modal-backdrop aria-hidden="true"></div>
           <img class="dm-locator__modal-image" src="${escapeHtml(images[0])}" alt="${escapeHtml(location.name)}" loading="lazy">
           ${images.length > 1 ? `<div class="dm-locator__modal-thumbs">${images.map((url, index) => `<img class="dm-locator__modal-thumb${index === 0 ? ' is-active' : ''}" src="${escapeHtml(url)}" data-dm-modal-thumb="${escapeHtml(url)}" alt="${escapeHtml(location.name)} ${index + 1}" loading="lazy">`).join('')}</div>` : ''}
         </div>` : '',
@@ -280,6 +318,7 @@
           return `<div class="dm-locator__modal-row${singleGallery ? ' dm-locator__modal-row--bleed' : ''}">${columns}</div>`;
         })
         .join('');
+      if (images[0]) loadModalImage(images[0]);
       modal.hidden = false;
       document.body.classList.add('dm-locator-modal-open');
     };
