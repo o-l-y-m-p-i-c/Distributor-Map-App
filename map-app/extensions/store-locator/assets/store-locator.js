@@ -36,6 +36,9 @@
     const endpoint = root.dataset.endpoint;
     let map;
     let locations = [];
+    const locationCache = new Map();
+    let suppressNextMoveend = false;
+    let searchSequence = 0;
     const markerStyle = root.dataset.dmMarkerStyle || 'default';
     const markerShape = root.dataset.dmMarkerShape || '50%';
     const photoMarkers = new Map();
@@ -383,7 +386,7 @@
 
     const render = (nextLocations) => {
       locations = nextLocations;
-      renderList(visibleLocations());
+      renderList(locations);
     };
 
     const removePhotoMarkers = () => {
@@ -446,9 +449,11 @@
       source?.setData({type: 'FeatureCollection', features});
       setTimeout(syncPhotoMarkers, 0);
       if (center?.latitude != null && center?.longitude != null) {
+        suppressNextMoveend = true;
         map.flyTo({center: [center.longitude, center.latitude], zoom: 10, essential: true});
       } else if (features.length) {
         const bounds = features.reduce((result, feature) => result.extend(feature.geometry.coordinates), new window.maplibregl.LngLatBounds(features[0].geometry.coordinates, features[0].geometry.coordinates));
+        suppressNextMoveend = true;
         map.fitBounds(bounds, {padding: 50, maxZoom: 12});
       }
     };
@@ -460,9 +465,13 @@
         map.addControl(new maplibregl.NavigationControl(), 'top-right');
         map.on('load', () => {
           const styles = getComputedStyle(root);
-          const primary = styles.getPropertyValue('--dm-primary').trim() || '#176274';
-          const accent = styles.getPropertyValue('--dm-accent').trim() || '#4ca9ba';
-          const markerText = styles.getPropertyValue('--dm-buttonText').trim() || styles.getPropertyValue('--dm-ink').trim() || '#fff';
+          const mapColor = (value, fallback) => {
+            const color = String(value ?? '').trim();
+            return color && !color.includes('var(') && color !== 'currentColor' ? color : fallback;
+          };
+          const primary = mapColor(styles.getPropertyValue('--dm-primary'), '#176274');
+          const accent = mapColor(styles.getPropertyValue('--dm-accent'), '#4ca9ba');
+          const markerText = mapColor(styles.getPropertyValue('--dm-buttonText'), mapColor(styles.getPropertyValue('--dm-ink'), '#fff'));
           map.addSource('dm-locations', {type: 'geojson', data: {type: 'FeatureCollection', features: []}, cluster: true, clusterMaxZoom: 13, clusterRadius: 48});
           const pointFilter = markerStyle === 'photo'
             ? ['all', ['!', ['has', 'point_count']], ['!=', ['get', 'photoMarker'], true]]
@@ -476,7 +485,11 @@
           map.on('idle', syncPhotoMarkers);
           map.on('moveend', () => {
             syncPhotoMarkers();
-            renderList(visibleLocations());
+            if (suppressNextMoveend) {
+              suppressNextMoveend = false;
+              return;
+            }
+
           });
           map.on('sourcedata', (event) => {
             if (event.sourceId === 'dm-locations') syncPhotoMarkers();
@@ -504,6 +517,7 @@
     };
 
     const search = async (params = new URLSearchParams()) => {
+      const sequence = ++searchSequence;
       status.textContent = 'Loading';
       empty.hidden = true;
       error.hidden = true;
@@ -511,13 +525,18 @@
         const response = await fetch(`${endpoint}?${params.toString()}`, {headers: {Accept: 'application/json'}});
         if (!response.ok) throw new Error('Search request failed');
         const payload = await response.json();
-        render(payload.items ?? payload.locations ?? []);
+        if (sequence !== searchSequence) return;
+        const items = payload.items ?? payload.locations ?? [];
+        locationCache.clear();
+        items.forEach((location) => locationCache.set(String(location.id), location));
+        render([...locationCache.values()]);
         updateMap(locations, payload.center);
         status.textContent = '';
       } catch {
-        list.innerHTML = '';
+        if (sequence !== searchSequence) return;
         status.textContent = '';
         error.hidden = false;
+        if (locations.length) renderList(locations);
       }
     };
 
