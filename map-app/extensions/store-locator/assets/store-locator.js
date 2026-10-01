@@ -36,6 +36,9 @@
     const endpoint = root.dataset.endpoint;
     let map;
     let locations = [];
+    const markerStyle = root.dataset.dmMarkerStyle || 'default';
+    const markerShape = root.dataset.dmMarkerShape || '50%';
+    const photoMarkers = new Map();
 
     if (!form || !list || !count || !status || !empty || !error || !mapContainer || !endpoint) return;
 
@@ -129,9 +132,12 @@
         .then((payload) => {
           storefrontSettings = payload;
           const config = payload?.modalConfig ?? {};
-          if (config.backgroundColor) root.style.setProperty('--dm-modal-bg', config.backgroundColor);
-          if (config.textColor) root.style.setProperty('--dm-modal-ink', config.textColor);
-          if (config.accentColor) root.style.setProperty('--dm-modal-accent', config.accentColor);
+          const themeModalBackground = root.style.getPropertyValue('--dm-surface').trim();
+          const themeModalInk = root.style.getPropertyValue('--dm-ink').trim();
+          const themeModalAccent = root.style.getPropertyValue('--dm-accent').trim();
+          root.style.setProperty('--dm-modal-bg', themeModalBackground || config.backgroundColor || '#fff');
+          root.style.setProperty('--dm-modal-ink', themeModalInk || config.textColor || '#092633');
+          root.style.setProperty('--dm-modal-accent', themeModalAccent || config.accentColor || '#176274');
           if (Number.isFinite(config.borderRadius)) root.style.setProperty('--dm-modal-radius', `${config.borderRadius}px`);
           if (Number.isFinite(config.width)) root.style.setProperty('--dm-modal-width', `${config.width}px`);
         })
@@ -341,9 +347,17 @@
       if (location) openModal(location);
     };
 
-    const render = (nextLocations) => {
-      locations = nextLocations;
-      list.innerHTML = locations.map((location) => `
+    const visibleLocations = () => {
+      if (!map) return locations;
+      const bounds = map.getBounds();
+      return locations.filter((location) => {
+        if (location.latitude == null || location.longitude == null) return true;
+        return bounds.contains([Number(location.longitude), Number(location.latitude)]);
+      });
+    };
+
+    const renderList = (visible) => {
+      list.innerHTML = visible.map((location) => `
         <div class="dm-locator__card" role="button" tabindex="0" data-dm-location="${escapeHtml(location.id)}">
           <strong>${escapeHtml(location.name)}</strong>
           <address>${escapeHtml([location.addressLine1, location.city, location.country].filter(Boolean).join(', '))}</address>
@@ -351,8 +365,8 @@
           <button type="button" class="dm-locator__details" data-dm-details="${escapeHtml(location.id)}">View details</button>
         </div>
       `).join('');
-      count.textContent = `${locations.length} ${locations.length === 1 ? 'location' : 'locations'}`;
-      empty.hidden = locations.length > 0;
+      count.textContent = `${visible.length} ${visible.length === 1 ? 'location' : 'locations'}`;
+      empty.hidden = visible.length > 0;
       list.querySelectorAll('[data-dm-location]').forEach((card) => {
         card.addEventListener('click', () => selectLocation(card.dataset.dmLocation));
         card.addEventListener('keydown', (event) => {
@@ -367,15 +381,70 @@
       });
     };
 
+    const render = (nextLocations) => {
+      locations = nextLocations;
+      renderList(visibleLocations());
+    };
+
+    const removePhotoMarkers = () => {
+      photoMarkers.forEach((marker) => marker.remove());
+      photoMarkers.clear();
+    };
+
+    const syncPhotoMarkers = () => {
+      if (!map || markerStyle !== 'photo') {
+        removePhotoMarkers();
+        return;
+      }
+      const visibleIds = new Set(
+        (map.querySourceFeatures('dm-locations') || [])
+          .filter((feature) => !feature.properties?.point_count)
+          .map((feature) => String(feature.properties?.id)),
+      );
+      locations.forEach((location) => {
+        const imageUrl = Array.isArray(location.imageUrls) && location.imageUrls[0]
+          ? location.imageUrls[0]
+          : location.imageUrl;
+        if (!imageUrl || location.latitude == null || location.longitude == null) return;
+        let marker = photoMarkers.get(String(location.id));
+        if (!marker) {
+          const element = document.createElement('button');
+          element.type = 'button';
+          element.className = `dm-locator__photo-marker${markerShape === 'raindrop' ? ' dm-locator__photo-marker--raindrop' : ''}`;
+          element.setAttribute('aria-label', `View ${location.name}`);
+          element.innerHTML = `<span class="dm-locator__photo-marker-shape"><img src="${escapeHtml(imageUrl)}" alt="" loading="lazy"></span>`;
+          element.addEventListener('click', (event) => {
+            event.stopPropagation();
+            openLocationModal(location.id);
+          });
+          marker = new window.maplibregl.Marker({element, anchor: markerShape === 'raindrop' ? 'bottom' : 'center'})
+            .setLngLat([Number(location.longitude), Number(location.latitude)])
+            .addTo(map);
+          photoMarkers.set(String(location.id), marker);
+        } else {
+          marker.setLngLat([Number(location.longitude), Number(location.latitude)]);
+        }
+        marker.getElement().style.display = visibleIds.has(String(location.id)) ? '' : 'none';
+      });
+      photoMarkers.forEach((marker, id) => {
+        if (!locations.some((location) => String(location.id) === id)) marker.remove();
+      });
+    };
+
     const updateMap = (nextLocations, center) => {
       if (!map) return;
       const source = map.getSource('dm-locations');
       const features = nextLocations.filter((location) => location.longitude != null && location.latitude != null).map((location) => ({
         type: 'Feature',
         geometry: {type: 'Point', coordinates: [Number(location.longitude), Number(location.latitude)]},
-        properties: {id: String(location.id), name: location.name},
+        properties: {
+          id: String(location.id),
+          name: location.name,
+          photoMarker: Boolean((Array.isArray(location.imageUrls) && location.imageUrls[0]) || location.imageUrl),
+        },
       }));
       source?.setData({type: 'FeatureCollection', features});
+      setTimeout(syncPhotoMarkers, 0);
       if (center?.latitude != null && center?.longitude != null) {
         map.flyTo({center: [center.longitude, center.latitude], zoom: 10, essential: true});
       } else if (features.length) {
@@ -393,13 +462,25 @@
           const styles = getComputedStyle(root);
           const primary = styles.getPropertyValue('--dm-primary').trim() || '#176274';
           const accent = styles.getPropertyValue('--dm-accent').trim() || '#4ca9ba';
+          const markerText = styles.getPropertyValue('--dm-buttonText').trim() || styles.getPropertyValue('--dm-ink').trim() || '#fff';
           map.addSource('dm-locations', {type: 'geojson', data: {type: 'FeatureCollection', features: []}, cluster: true, clusterMaxZoom: 13, clusterRadius: 48});
+          const pointFilter = markerStyle === 'photo'
+            ? ['all', ['!', ['has', 'point_count']], ['!=', ['get', 'photoMarker'], true]]
+            : ['!', ['has', 'point_count']];
           // Halo behind unclustered points (soft ring, Google-Maps-like pin glow).
-          map.addLayer({id: 'dm-points-halo', type: 'circle', source: 'dm-locations', filter: ['!', ['has', 'point_count']], paint: {'circle-color': accent, 'circle-opacity': 0.25, 'circle-radius': 16, 'circle-blur': 0.6}});
+          map.addLayer({id: 'dm-points-halo', type: 'circle', source: 'dm-locations', filter: pointFilter, paint: {'circle-color': accent, 'circle-opacity': 0.25, 'circle-radius': 16, 'circle-blur': 0.6}});
           map.addLayer({id: 'dm-clusters', type: 'circle', source: 'dm-locations', filter: ['has', 'point_count'], paint: {'circle-color': primary, 'circle-radius': ['step', ['get', 'point_count'], 18, 10, 24, 50, 30], 'circle-stroke-width': 2, 'circle-stroke-color': '#fff'}});
-          map.addLayer({id: 'dm-cluster-count', type: 'symbol', source: 'dm-locations', filter: ['has', 'point_count'], layout: {'text-field': '{point_count_abbreviated}', 'text-size': 12, 'text-font': ['Noto Sans Bold']}, paint: {'text-color': '#fff'}});
-          map.addLayer({id: 'dm-points', type: 'circle', source: 'dm-locations', filter: ['!', ['has', 'point_count']], paint: {'circle-color': accent, 'circle-radius': 9, 'circle-stroke-width': 2.5, 'circle-stroke-color': '#fff'}});
+          map.addLayer({id: 'dm-cluster-count', type: 'symbol', source: 'dm-locations', filter: ['has', 'point_count'], layout: {'text-field': '{point_count_abbreviated}', 'text-size': 12, 'text-font': ['Noto Sans Bold']}, paint: {'text-color': markerText}});
+          map.addLayer({id: 'dm-points', type: 'circle', source: 'dm-locations', filter: pointFilter, paint: {'circle-color': accent, 'circle-radius': 9, 'circle-stroke-width': 2.5, 'circle-stroke-color': '#fff'}});
           updateMap(locations);
+          map.on('idle', syncPhotoMarkers);
+          map.on('moveend', () => {
+            syncPhotoMarkers();
+            renderList(visibleLocations());
+          });
+          map.on('sourcedata', (event) => {
+            if (event.sourceId === 'dm-locations') syncPhotoMarkers();
+          });
         });
         map.on('click', 'dm-clusters', async (event) => {
           const feature = map.queryRenderedFeatures(event.point, {layers: ['dm-clusters']})[0];

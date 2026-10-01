@@ -14,7 +14,9 @@
   class="dm-locator color-{{ section.settings.color_scheme }}"
   data-dm-locator
   data-endpoint="/apps/distributor-map/search"
-  style="--dm-list-height-desktop: {{ section.settings.list_height_desktop }}px; --dm-list-height-mobile: {{ section.settings.list_height_mobile }}px;"
+  data-dm-marker-style="{{ section.settings.marker_style }}"
+  data-dm-marker-shape="{{ section.settings.photo_marker_shape }}"
+  style="--dm-list-height-desktop: {{ section.settings.list_height_desktop }}px; --dm-list-height-mobile: {{ section.settings.list_height_mobile }}px; --dm-marker-size: {{ section.settings.marker_size }}px; --dm-marker-radius: {{ section.settings.photo_marker_shape }}; --dm-marker-border-color: {{ section.settings.photo_marker_border_color }}; --dm-marker-border-width: {{ section.settings.photo_marker_border_width }}px;"
 >
   <div class="dm-locator__header">
     <div>
@@ -84,6 +86,19 @@
     { "type": "richtext", "id": "description", "label": "Description", "default": "<p>Search our retail network and discover where to find PickAqua.</p>" },
     { "type": "text", "id": "search_placeholder", "label": "Search placeholder", "default": "City, postcode, or address" },
     { "type": "checkbox", "id": "enable_geolocation", "label": "Show use location button", "default": true },
+    { "type": "select", "id": "marker_style", "label": "Marker style", "default": "default", "options": [
+      { "value": "default", "label": "Default marker" },
+      { "value": "photo", "label": "Photo marker" }
+    ] },
+    { "type": "range", "id": "marker_size", "label": "Marker size", "min": 28, "max": 96, "step": 2, "unit": "px", "default": 48 },
+    { "type": "select", "id": "photo_marker_shape", "label": "Photo marker shape", "default": "50%", "options": [
+      { "value": "50%", "label": "Circle" },
+      { "value": "14px", "label": "Rounded" },
+      { "value": "0", "label": "Square" },
+      { "value": "raindrop", "label": "Raindrop" }
+    ] },
+    { "type": "color", "id": "photo_marker_border_color", "label": "Photo marker border", "default": "#FFFFFF" },
+    { "type": "range", "id": "photo_marker_border_width", "label": "Photo marker border width", "min": 0, "max": 4, "step": 1, "unit": "px", "default": 1 },
     { "type": "range", "id": "list_height_desktop", "label": "Locations height on desktop", "min": 280, "max": 1000, "step": 10, "unit": "px", "default": 540 },
     { "type": "range", "id": "list_height_mobile", "label": "Locations height on mobile", "min": 240, "max": 1000, "step": 10, "unit": "px", "default": 500 }
   ]
