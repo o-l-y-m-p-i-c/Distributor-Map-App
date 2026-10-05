@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">Knead modeling mass</title>
+  <desc id="desc">Two hands kneading a purple modeling mass</desc>
+  <g fill="none" stroke="#8D4D2F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M10 39c6-4 11-4 16 0l12 11 5-5-9-12c-2-3-1-6 2-7 2-1 4 0 6 2l10 11 4-4-8-12c-2-3-1-6 2-7 2-1 4 0 6 2l11 13 4-3-6-10c-2-3-1-6 2-7 2-1 4 0 6 3l10 15c4 6 3 12-2 17L60 65 39 63 22 51Z" fill="#F5E8D8"/>
+    <path d="M86 39c-6-4-11-4-16 0L58 50l-5-5 9-12c2-3 1-6-2-7-2-1-4 0-6 2L44 39l-4-4 8-12c2-3 1-6-2-7-2-1-4 0-6 2L29 31l-4-3 6-10c2-3 1-6-2-7-2-1-4 0-6 3L17 29c-4 6-3 12 2 17l14 18 21-2 17-11Z" fill="#F5E8D8"/>
+  </g>
+  <path d="M26 67c4-9 13-14 23-14h1c10 0 19 5 23 14-4 10-13 16-24 16S30 77 26 67Z" fill="#6B2E83" stroke="#8D4D2F" stroke-width="3"/>
+</svg>

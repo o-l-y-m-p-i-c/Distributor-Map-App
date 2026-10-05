@@ -22,6 +22,7 @@ const locationUpdateSchema = z.object({
   description: z.string().trim().max(5000).nullable().optional(),
   imageUrls: z.array(z.string().trim().min(1).max(2048)).max(50).optional(),
   buttonUrl: z.string().trim().max(2048).nullable().optional(),
+  customValues: z.record(z.string(), z.string().trim().max(2000)).optional(),
   type: z.string().trim().min(1).max(80).optional(),
   published: z.boolean().optional(),
 });

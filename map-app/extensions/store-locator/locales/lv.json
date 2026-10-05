@@ -1,0 +1,30 @@
+{
+  "ratings": {
+    "stars": { "label": "Vērtējumi" },
+    "home": { "recommendationText": "Ieteicamais produkts!" }
+  },
+  "store_locator": {
+    "use_location": "Izmantot manu atrašanās vietu",
+    "search_label": "Meklēt atrašanās vietas",
+    "radius_label": "Meklēšanas rādiuss",
+    "search": "Meklēt",
+    "locations": "atrašanās vietas",
+    "empty": "Šajā apgabalā atrašanās vietas nav atrastas.",
+    "error": "Neizdevās ielādēt atrašanās vietas. Mēģiniet vēlreiz.",
+    "map_loading": "Karte tiks parādīta šeit",
+    "map_label": "Veikalu meklētāja karte",
+    "view_locations": "Skatīt atrašanās vietas",
+    "close_locations": "Aizvērt atrašanās vietas",
+    "search_area": "Meklēt šajā apgabalā",
+    "locations_aria": "Atrašanās vietas",
+    "view_details": "Skatīt informāciju",
+    "close": "Aizvērt",
+    "choose_navigation": "Izvēlieties navigācijas lietotni",
+    "automatic_navigation": "Automātiski / Sistēma",
+    "get_directions": "Saņemt norādes",
+    "navigation": "Navigācija",
+    "loading": "Ielādē…",
+    "no_locations_area": "Šajā apgabalā atrašanās vietas nav atrastas.",
+    "map_unavailable": "Karte nav pieejama"
+  }
+}

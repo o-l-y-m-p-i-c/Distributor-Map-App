@@ -48,6 +48,7 @@ model Location {
   description    String?
   imageUrls      String[]               @default([])
   buttonUrl      String?
+  customValues   Json                   @default("{}")
   type           String
   published      Boolean                @default(false)
   createdAt      DateTime               @default(now())
@@ -142,6 +143,8 @@ model Settings {
   markerStyle        String   @default("pin")
   primaryColor       String   @default("#176274")
   accentColor        String   @default("#4ca9ba")
+  customSections     Json     @default("[]")
+  modalConfig        Json     @default("{}")
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
   shop               Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)

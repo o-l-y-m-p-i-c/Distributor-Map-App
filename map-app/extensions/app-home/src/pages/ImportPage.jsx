@@ -9,8 +9,16 @@ const baseUrl = 'https://distributor-map-app.onrender.com/api/admin/import';
  */
 
 const MAX_IMAGES_PER_ROW = 5;
+const FILE_POLL_ATTEMPTS = 90;
+const FILE_POLL_INTERVAL_MS = 1000;
 
-/** @param {string} url @returns {Promise<string>} Shopify CDN URL, or the original URL if the upload fails */
+/** @param {number} ms */
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * @param {string} url
+ * @returns {Promise<{url: string, uploaded: boolean, error?: string}>} Shopify CDN URL, or the original URL with the failure reason
+ */
 const uploadToFiles = async (url) => {
   try {
     const created = await shopify.query(`
@@ -20,12 +28,17 @@ const uploadToFiles = async (url) => {
           userErrors { field message }
         }
       }`, {variables: {files: [{originalSource: url, contentType: 'IMAGE'}]}});
-    const file = /** @type {any} */ (created.data)?.fileCreate?.files?.[0];
-    if (!file?.id) return url;
-    for (let attempt = 0; attempt < 20; attempt += 1) {
-      if (file.fileStatus === 'READY') return file.image?.url ?? file.url ?? url;
-      if (file.fileStatus === 'FAILED') return url;
-      await new Promise((resolve) => setTimeout(resolve, 750));
+    const payload = /** @type {any} */ (created.data)?.fileCreate;
+    const file = payload?.files?.[0];
+    if (!file?.id) {
+      const reason = payload?.userErrors?.map((/** @type {any} */ error) => error.message).join('; ') || /** @type {any} */ (created.errors)?.[0]?.message || 'fileCreate returned no file';
+      return {url, uploaded: false, error: reason};
+    }
+    for (let attempt = 0; attempt < FILE_POLL_ATTEMPTS; attempt += 1) {
+      const cdnUrl = file.image?.url ?? file.url;
+      if (file.fileStatus === 'READY' && cdnUrl) return {url: cdnUrl, uploaded: true};
+      if (file.fileStatus === 'FAILED') return {url, uploaded: false, error: 'Shopify could not fetch or process this URL'};
+      await sleep(FILE_POLL_INTERVAL_MS);
       const polled = await shopify.query(`
         query fileStatus($id: ID!) {
           node(id: $id) { ... on File { id fileStatus } ... on MediaImage { image { url } } ... on GenericFile { url } }
@@ -33,9 +46,9 @@ const uploadToFiles = async (url) => {
       const node = /** @type {any} */ (polled.data)?.node;
       if (node) Object.assign(file, node);
     }
-    return url;
-  } catch {
-    return url;
+    return {url, uploaded: false, error: 'timed out while Shopify processed the file'};
+  } catch (error) {
+    return {url, uploaded: false, error: error instanceof Error ? error.message : 'upload failed'};
   }
 };
 
@@ -43,14 +56,14 @@ export default function ImportPage() {
   const [fileName, setFileName] = useState('');
   const [preview, setPreview] = useState(/** @type {PreviewResult | null} */ (null));
   const [uploadImages, setUploadImages] = useState(true);
-  const [state, setState] = useState({loading: false, error: '', imported: 0, status: ''});
+  const [state, setState] = useState({loading: false, error: '', imported: 0, status: '', warnings: /** @type {string[]} */ ([])});
 
   /** @param {File | undefined} file */
   const handleFile = async (file) => {
     if (!file) return;
     setFileName(file.name);
     setPreview(null);
-    setState({loading: true, error: '', imported: 0, status: ''});
+    setState({loading: true, error: '', imported: 0, status: '', warnings: []});
     try {
       const csv = await file.text();
       const response = await fetchWithIdToken(`${baseUrl}/preview`, {method: 'POST', headers: {'content-type': 'application/json', accept: 'application/json'}, body: JSON.stringify({csv})});
@@ -67,10 +80,12 @@ export default function ImportPage() {
     if (!preview) return;
     const rows = preview.rows.filter((row) => row.valid).map((row) => ({...(row.data ?? {})}));
     if (!rows.length) return;
-    setState({loading: true, error: '', imported: 0, status: ''});
+    setState({loading: true, error: '', imported: 0, status: '', warnings: []});
     try {
       if (uploadImages) {
         const total = rows.reduce((count, row) => count + [row.image_url, ...(row.image_urls ? row.image_urls.split('|') : [])].filter((url) => (url ?? '').trim()).length, 0);
+        const cache = new Map();
+        const failures = /** @type {string[]} */ ([]);
         let done = 0;
         for (const row of rows) {
           const urls = [row.image_url, ...(row.image_urls ? row.image_urls.split('|') : [])].map((url) => (url ?? '').trim()).filter(Boolean).slice(0, MAX_IMAGES_PER_ROW);
@@ -78,20 +93,23 @@ export default function ImportPage() {
           for (const url of urls) {
             done += 1;
             setState((current) => ({...current, status: `Uploading image ${done} of ${total} to Shopify Files…`}));
-            uploaded.push(await uploadToFiles(url));
+            if (!cache.has(url)) cache.set(url, await uploadToFiles(url));
+            const result = cache.get(url);
+            if (!result.uploaded) failures.push(`${url} (${result.error ?? 'unknown error'})`);
+            uploaded.push(result.url);
           }
           row.image_url = uploaded[0] ?? '';
           row.image_urls = uploaded.slice(1).join('|');
         }
-        setState((current) => ({...current, status: 'Creating locations…'}));
+        setState((current) => ({...current, status: 'Creating locations…', warnings: failures}));
       }
       const response = await fetchWithIdToken(`${baseUrl}/confirm`, {method: 'POST', headers: {'content-type': 'application/json', accept: 'application/json'}, body: JSON.stringify({rows})});
       if (!response.ok) throw new Error(`Import failed (${response.status})`);
       const payload = await response.json();
-      setState({loading: false, error: '', imported: payload?.imported ?? 0, status: ''});
+      setState((current) => ({loading: false, error: '', imported: payload?.imported ?? 0, status: '', warnings: current.warnings ?? []}));
       setPreview(null);
     } catch (error) {
-      setState({loading: false, error: error instanceof Error ? error.message : 'Unable to import CSV', imported: 0, status: ''});
+      setState((current) => ({loading: false, error: error instanceof Error ? error.message : 'Unable to import CSV', imported: 0, status: '', warnings: current.warnings ?? []}));
     }
   };
 
@@ -101,6 +119,11 @@ export default function ImportPage() {
     <s-page heading="Import locations">
       <s-section heading="CSV file">
         {state.imported > 0 && <s-banner tone="success" heading="Import complete">{state.imported} locations were imported. <s-link href="/locations">View locations</s-link></s-banner>}
+        {state.warnings.length > 0 && (
+          <s-banner tone="warning" heading={`${state.warnings.length} image(s) kept their original URLs`}>
+            Shopify Files could not process these sources, so the original links were saved instead: {state.warnings.slice(0, 10).join(' | ')}
+          </s-banner>
+        )}
         {state.error && <s-banner tone="critical" heading="Import failed">{state.error}</s-banner>}
         <s-paragraph>Required columns: name, address, city, postal_code, country. Optional: address2, state, latitude, longitude, phone, phones, email, emails, website, websites (separate multiple values with |), type, description, image_url, image_urls, button_url.</s-paragraph>
         <s-checkbox label="Upload images to Shopify Files (Content → Files)" checked={uploadImages} onChange={(event) => setUploadImages(event.currentTarget.checked)}></s-checkbox>

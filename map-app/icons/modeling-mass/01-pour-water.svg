@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">Pour water over modeling mass</title>
+  <desc id="desc">A tilted glass pouring water onto a purple ball of modeling mass</desc>
+  <g fill="none" stroke="#8D4D2F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M18 20 39 8l17 29-21 12z" fill="#F5E8D8"/>
+    <path d="m52 34 10 6"/>
+    <path d="M57 42c3 2 5 4 6 7" stroke="#4E9EA4" stroke-width="4"/>
+    <path d="M63 51c1 3 2 5 2 7" stroke="#4E9EA4" stroke-width="4"/>
+    <path d="M48 67c0-10 8-17 18-17s18 7 18 17-8 18-18 18-18-8-18-18Z" fill="#6B2E83"/>
+    <path d="M54 58c4-3 8-4 12-4" stroke="#8E52A1"/>
+  </g>
+  <circle cx="65" cy="48" r="2" fill="#4E9EA4"/>
+</svg>

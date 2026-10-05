@@ -5,7 +5,7 @@ import {fetchWithIdToken} from '../lib/shopify.js';
 const apiUrl = 'https://distributor-map-app.onrender.com/api/admin/locations';
 
 /** @typedef {{id: string, name: string, city: string, country: string, type: string, published: boolean}} Location */
-/** @typedef {{items?: Location[]}} LocationResponse */
+/** @typedef {{items?: Location[], page?: number, pageSize?: number, total?: number}} LocationResponse */
 /** @typedef {'publish' | 'unpublish' | 'delete'} BulkAction */
 
 export default function LocationsPage() {
@@ -16,20 +16,30 @@ export default function LocationsPage() {
   const [busy, setBusy] = useState(/** @type {string} */ (''));
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState('');
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const pageSize = 25;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
-  const load = () => {
+  /** @param {number} targetPage */
+  const load = (targetPage = page) => {
     setLoading(true);
-    fetchWithIdToken(apiUrl, {headers: {accept: 'application/json'}})
+    setError('');
+    fetchWithIdToken(`${apiUrl}?page=${targetPage}&pageSize=${pageSize}`, {headers: {accept: 'application/json'}})
       .then(async (response) => {
         if (!response.ok) throw new Error(`Request failed (${response.status})`);
         return response.json();
       })
-      .then(/** @param {LocationResponse} payload */ (payload) => setLocations(payload.items ?? []))
+      .then(/** @param {LocationResponse} payload */ (payload) => {
+        setLocations(payload.items ?? []);
+        setPage(payload.page ?? targetPage);
+        setTotal(payload.total ?? 0);
+      })
       .catch((requestError) => setError(requestError instanceof Error ? requestError.message : 'Unable to load locations'))
       .finally(() => setLoading(false));
   };
 
-  useEffect(load, []);
+  useEffect(() => { load(1); }, []);
 
   const exportCsv = async () => {
     setExporting(true);
@@ -69,7 +79,7 @@ export default function LocationsPage() {
       const response = await fetchWithIdToken(`${apiUrl}/bulk`, {method: 'POST', headers: {'content-type': 'application/json', accept: 'application/json'}, body: JSON.stringify({ids, action})});
       if (!response.ok) throw new Error(`Request failed (${response.status})`);
       setSelected(new Set());
-      load();
+      load(page);
     } catch (bulkError) {
       setError(bulkError instanceof Error ? bulkError.message : 'Unable to update locations');
     } finally {
@@ -133,6 +143,13 @@ export default function LocationsPage() {
                 ))}
               </s-table-body>
             </s-table>
+            {totalPages > 1 && (
+              <s-stack direction="inline" gap="base" alignItems="center">
+                <s-button type="button" disabled={page <= 1 || loading} onClick={() => { setSelected(new Set()); load(page - 1); }}>Previous</s-button>
+                <s-text>Page {page} of {totalPages} · {total} locations</s-text>
+                <s-button type="button" disabled={page >= totalPages || loading} onClick={() => { setSelected(new Set()); load(page + 1); }}>Next</s-button>
+              </s-stack>
+            )}
           </div>
         )}
       </s-section>

@@ -16,6 +16,19 @@
     "empty": "No locations found in this area.",
     "error": "We could not load locations. Please try again.",
     "map_loading": "Map will appear here",
-    "map_label": "Store locator map"
+    "map_label": "Store locator map",
+    "view_locations": "View locations",
+    "close_locations": "Close locations",
+    "search_area": "Search this area",
+    "locations_aria": "Locations",
+    "view_details": "View details",
+    "close": "Close",
+    "choose_navigation": "Choose navigation app",
+    "automatic_navigation": "Automatic / System",
+    "get_directions": "Get directions",
+    "navigation": "Navigation",
+    "loading": "Loading",
+    "no_locations_area": "No locations in this area.",
+    "map_unavailable": "Map unavailable"
   }
 }

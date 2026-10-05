@@ -1,0 +1,30 @@
+{
+  "ratings": {
+    "stars": { "label": "Рейтинг" },
+    "home": { "recommendationText": "Рекомендуемый продукт!" }
+  },
+  "store_locator": {
+    "use_location": "Использовать моё местоположение",
+    "search_label": "Поиск локаций",
+    "radius_label": "Радиус поиска",
+    "search": "Поиск",
+    "locations": "локаций",
+    "empty": "В этом районе локации не найдены.",
+    "error": "Не удалось загрузить локации. Попробуйте ещё раз.",
+    "map_loading": "Карта появится здесь",
+    "map_label": "Карта поиска магазинов",
+    "view_locations": "Показать локации",
+    "close_locations": "Закрыть список локаций",
+    "search_area": "Искать в этой области",
+    "locations_aria": "Локации",
+    "view_details": "Подробнее",
+    "close": "Закрыть",
+    "choose_navigation": "Выберите приложение навигации",
+    "automatic_navigation": "Автоматически / Система",
+    "get_directions": "Построить маршрут",
+    "navigation": "Навигация",
+    "loading": "Загрузка…",
+    "no_locations_area": "В этом районе локации не найдены.",
+    "map_unavailable": "Карта недоступна"
+  }
+}

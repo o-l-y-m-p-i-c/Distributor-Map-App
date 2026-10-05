@@ -1,37 +1,55 @@
+{% comment %}
+  Standalone theme section version of Distributor Map Store Locator.
+
+  Copy this file to the theme's sections/ directory. Also copy these assets
+  to the theme's assets/ directory:
+  - store-locator.css
+  - store-locator.js
+
+  The section uses the existing app proxy endpoint and native Shopify color
+  schemes. The App Block remains available separately.
+{% endcomment %}
+
 <section
-  class="dm-locator"
+  class="dm-locator color-{{ section.settings.color_scheme }}"
   data-dm-locator
   data-endpoint="/apps/distributor-map/search"
-  data-dm-marker-style="{{ block.settings.marker_style }}"
-  data-dm-marker-shape="{{ block.settings.photo_marker_shape }}"
-  style="--dm-list-height-desktop: {{ block.settings.list_height_desktop }}px; --dm-list-height-mobile: {{ block.settings.list_height_mobile }}px; --dm-marker-size: {{ block.settings.marker_size }}px; --dm-marker-radius: {{ block.settings.photo_marker_shape }}; --dm-marker-border-color: {{ block.settings.photo_marker_border_color }}; --dm-marker-border-width: {{ block.settings.photo_marker_border_width }}px;"
-  {{ block.shopify_attributes }}
+  data-dm-marker-style="{{ section.settings.marker_style }}"
+  data-dm-marker-shape="{{ section.settings.photo_marker_shape }}"
+  style="--dm-list-height-desktop: {{ section.settings.list_height_desktop }}px; --dm-list-height-mobile: {{ section.settings.list_height_mobile }}px; --dm-marker-size: {{ section.settings.marker_size }}px; --dm-marker-radius: {{ section.settings.photo_marker_shape }}; --dm-marker-border-color: {{ section.settings.photo_marker_border_color }}; --dm-marker-border-width: {{ section.settings.photo_marker_border_width }}px;"
 >
   <div class="dm-locator__header">
     <div>
-      {% if block.settings.eyebrow != blank %}<p class="dm-locator__eyebrow">{{ block.settings.eyebrow | escape }}</p>{% endif %}
-      {% if block.settings.heading != blank %}
-        <div class="dm-locator__heading rte">{{ block.settings.heading }}</div>
+      {% if section.settings.eyebrow != blank %}
+        <p class="dm-locator__eyebrow">{{ section.settings.eyebrow | escape }}</p>
       {% endif %}
-      {% if block.settings.description != blank %}
-        <div class="dm-locator__description rte">{{ block.settings.description }}</div>
+
+      {% if section.settings.heading != blank %}
+        <div class="dm-locator__heading rte">{{ section.settings.heading }}</div>
+      {% endif %}
+
+      {% if section.settings.description != blank %}
+        <div class="dm-locator__description rte">{{ section.settings.description }}</div>
       {% endif %}
     </div>
-    {% if block.settings.enable_geolocation %}
-      <button type="button" class="dm-locator__locate" data-dm-locate>{{ 'store_locator.use_location' | t }}</button>
+
+    {% if section.settings.enable_geolocation %}
+      <button type="button" class="dm-locator__locate" data-dm-locate>
+        Use my location
+      </button>
     {% endif %}
   </div>
 
   <form class="dm-locator__search" data-dm-search>
-    <label class="visually-hidden" for="dm-locator-query-{{ block.id }}">{{ 'store_locator.search_label' | t }}</label>
-    <input id="dm-locator-query-{{ block.id }}" type="search" name="q" placeholder="{{ block.settings.search_placeholder | escape }}" autocomplete="off">
-    <select name="radius" aria-label="{{ 'store_locator.radius_label' | t }}">
+    <label class="visually-hidden" for="dm-locator-query-{{ section.id }}">Search locations</label>
+    <input id="dm-locator-query-{{ section.id }}" type="search" name="q" placeholder="{{ section.settings.search_placeholder | escape }}" autocomplete="off">
+    <select name="radius" aria-label="Search radius">
       <option value="20">20 km</option>
       <option value="50" selected>50 km</option>
       <option value="100">100 km</option>
       <option value="200">200 km</option>
     </select>
-    <button type="submit">{{ 'store_locator.search' | t }}</button>
+    <button type="submit">Search</button>
   </form>
 
   <button type="button" class="dm-locator__mobile-list-toggle" data-dm-open-list aria-expanded="false">
@@ -41,19 +59,17 @@
   <div class="dm-locator__body">
     <aside class="dm-locator__results" aria-live="polite" aria-label="{{ 'store_locator.locations_aria' | t }}">
       <div class="dm-locator__results-head">
-        <strong data-dm-count>0 {{ 'store_locator.locations' | t }}</strong>
+        <strong data-dm-count>0 locations</strong>
         <span data-dm-status></span>
         <button type="button" class="dm-locator__mobile-list-close" data-dm-close-list aria-label="{{ 'store_locator.close_locations' | t }}">&#215;</button>
       </div>
       <div data-dm-list></div>
-      <p class="dm-locator__empty" data-dm-empty hidden>{{ 'store_locator.empty' | t }}</p>
-      <p class="dm-locator__error" data-dm-error hidden>{{ 'store_locator.error' | t }}</p>
+      <p class="dm-locator__empty" data-dm-empty hidden>No locations found.</p>
+      <p class="dm-locator__error" data-dm-error hidden>Unable to load locations.</p>
     </aside>
-    <div class="dm-locator__map" data-dm-map role="region" aria-label="{{ 'store_locator.map_label' | t }}">
+    <div class="dm-locator__map" data-dm-map role="region" aria-label="Location map">
       <button type="button" class="dm-locator__search-area" data-dm-search-area>{{ 'store_locator.search_area' | t }}</button>
-      <div class="dm-locator__map-placeholder">
-        <span>{{ 'store_locator.map_loading' | t }}</span>
-      </div>
+      <div class="dm-locator__map-placeholder"><span>Loading map…</span></div>
     </div>
   </div>
 </section>
@@ -72,13 +88,14 @@
   }
 </script>
 
+{{ 'store-locator.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'store-locator.js' | asset_url }}" defer></script>
+
 {% schema %}
 {
   "name": "Store locator",
-  "target": "section",
-  "stylesheet": "store-locator.css",
-  "javascript": "store-locator-loader.js",
   "settings": [
+    { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-1" },
     { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "FIND US" },
     { "type": "richtext", "id": "heading", "label": "Heading", "default": "<p>Find a distributor near you</p>" },
     { "type": "richtext", "id": "description", "label": "Description", "default": "<p>Search our retail network and discover where to find PickAqua.</p>" },

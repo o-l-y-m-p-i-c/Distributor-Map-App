@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">Mix modeling mass</title>
+  <desc id="desc">A mixing tool and clock above a container of modeling mass</desc>
+  <g fill="none" stroke="#8D4D2F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="24" cy="22" r="12" fill="#F5E8D8"/>
+    <path d="M24 15v8l5 3"/>
+    <path d="M42 12 76 46"/>
+    <path d="m38 16 8-8 8 8-8 8z" fill="#F5E8D8"/>
+    <path d="m67 37 9 9"/>
+    <path d="M31 43h45l-5 39H36z" fill="#F5E8D8"/>
+    <path d="M36 57c6-5 12 5 19 0s12 5 18 0" stroke="#6B2E83" stroke-width="5"/>
+    <path d="M36 43h40"/>
+  </g>
+  <path d="M38 42h31v10H38z" fill="#6B2E83" opacity=".9"/>
+</svg>
