@@ -53,25 +53,40 @@
   </form>
 
   <button type="button" class="dm-locator__mobile-list-toggle" data-dm-open-list aria-expanded="false">
-    View locations
+    {{ 'store_locator.view_locations' | t }}
   </button>
 
   <div class="dm-locator__body">
-    <aside class="dm-locator__results" aria-live="polite" aria-label="Locations">
+    <aside class="dm-locator__results" aria-live="polite" aria-label="{{ 'store_locator.locations_aria' | t }}">
       <div class="dm-locator__results-head">
         <strong data-dm-count>0 locations</strong>
         <span data-dm-status></span>
-        <button type="button" class="dm-locator__mobile-list-close" data-dm-close-list aria-label="Close locations">&#215;</button>
+        <button type="button" class="dm-locator__mobile-list-close" data-dm-close-list aria-label="{{ 'store_locator.close_locations' | t }}">&#215;</button>
       </div>
       <div data-dm-list></div>
       <p class="dm-locator__empty" data-dm-empty hidden>No locations found.</p>
       <p class="dm-locator__error" data-dm-error hidden>Unable to load locations.</p>
     </aside>
     <div class="dm-locator__map" data-dm-map role="region" aria-label="Location map">
+      <button type="button" class="dm-locator__search-area" data-dm-search-area>{{ 'store_locator.search_area' | t }}</button>
       <div class="dm-locator__map-placeholder"><span>Loading map…</span></div>
     </div>
   </div>
 </section>
+
+<script type="application/json" data-dm-locator-translations>
+  {
+    "viewDetails": {{ 'store_locator.view_details' | t | json }},
+    "close": {{ 'store_locator.close' | t | json }},
+    "chooseNavigation": {{ 'store_locator.choose_navigation' | t | json }},
+    "automaticNavigation": {{ 'store_locator.automatic_navigation' | t | json }},
+    "getDirections": {{ 'store_locator.get_directions' | t | json }},
+    "navigation": {{ 'store_locator.navigation' | t | json }},
+    "loading": {{ 'store_locator.loading' | t | json }},
+    "noLocationsArea": {{ 'store_locator.no_locations_area' | t | json }},
+    "mapUnavailable": {{ 'store_locator.map_unavailable' | t | json }}
+  }
+</script>
 
 {{ 'store-locator.css' | asset_url | stylesheet_tag }}
 <script src="{{ 'store-locator.js' | asset_url }}" defer></script>
@@ -84,7 +99,7 @@
     { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "FIND US" },
     { "type": "richtext", "id": "heading", "label": "Heading", "default": "<p>Find a distributor near you</p>" },
     { "type": "richtext", "id": "description", "label": "Description", "default": "<p>Search our retail network and discover where to find PickAqua.</p>" },
-    { "type": "text", "id": "search_placeholder", "label": "Search placeholder", "default": "City, postcode, or address" },
+    { "type": "text", "id": "search_placeholder", "label": "Search placeholder", "default": "Store name, city, postcode, or address" },
     { "type": "checkbox", "id": "enable_geolocation", "label": "Show use location button", "default": true },
     { "type": "select", "id": "marker_style", "label": "Marker style", "default": "default", "options": [
       { "value": "default", "label": "Default marker" },

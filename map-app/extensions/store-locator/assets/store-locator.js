@@ -31,13 +31,20 @@
     const empty = root.querySelector('[data-dm-empty]');
     const error = root.querySelector('[data-dm-error]');
     const mapContainer = root.querySelector('[data-dm-map]');
+    const searchAreaButton = root.querySelector('[data-dm-search-area]');
     const openListButton = root.querySelector('[data-dm-open-list]');
     const closeListButton = root.querySelector('[data-dm-close-list]');
     const endpoint = root.dataset.endpoint;
+    const translationScript = root.parentElement?.querySelector('[data-dm-locator-translations]');
+    let translations = {};
+    try { translations = JSON.parse(translationScript?.textContent || '{}'); } catch {}
+    const translate = (key, fallback) => translations[key] || fallback;
     let map;
     let locations = [];
     const locationCache = new Map();
     let suppressNextMoveend = false;
+    let viewportSearchActive = false;
+    let viewportSearchTimer = null;
     let searchSequence = 0;
     const markerStyle = root.dataset.dmMarkerStyle || 'default';
     const markerShape = root.dataset.dmMarkerShape || '50%';
@@ -88,7 +95,7 @@
     modal.innerHTML = `
       <div class="dm-locator__modal-backdrop" data-dm-modal-close></div>
       <div class="dm-locator__modal-card" role="dialog" aria-modal="true">
-        <button type="button" class="dm-locator__modal-close" data-dm-modal-close aria-label="Close">&#215;</button>
+        <button type="button" class="dm-locator__modal-close" data-dm-modal-close aria-label="${translate('close', 'Close')}">&#215;</button>
         <div data-dm-modal-body></div>
       </div>`;
     root.appendChild(modal);
@@ -99,10 +106,10 @@
     navigationModal.innerHTML = `
       <div class="dm-locator__navigation-backdrop" data-dm-navigation-close></div>
       <div class="dm-locator__navigation-card" role="dialog" aria-modal="true" aria-labelledby="dm-navigation-title-${root.dataset.dmLocator || 'locator'}">
-        <button type="button" class="dm-locator__modal-close" data-dm-navigation-close aria-label="Close">&#215;</button>
-        <strong id="dm-navigation-title-${root.dataset.dmLocator || 'locator'}">Choose navigation app</strong>
+        <button type="button" class="dm-locator__modal-close" data-dm-navigation-close aria-label="${translate('close', 'Close')}">&#215;</button>
+        <strong id="dm-navigation-title-${root.dataset.dmLocator || 'locator'}">${translate('chooseNavigation', 'Choose navigation app')}</strong>
         <div class="dm-locator__navigation-options">
-          <button type="button" data-dm-nav-provider="auto">Automatic / System</button>
+          <button type="button" data-dm-nav-provider="auto">${translate('automaticNavigation', 'Automatic / System')}</button>
           <button type="button" data-dm-nav-provider="google">Google Maps</button>
           <button type="button" data-dm-nav-provider="apple">Apple Maps</button>
           <button type="button" data-dm-nav-provider="waze">Waze</button>
@@ -206,7 +213,7 @@
     };
 
     const directionsHtml = () => `<div class="dm-locator__directions">
-      <button type="button" class="dm-locator__modal-directions" data-dm-nav-open>Get directions</button>
+      <button type="button" class="dm-locator__modal-directions" data-dm-nav-open>${translate('getDirections', 'Get directions')}</button>
     </div>`;
 
     let modalLocation = null;
@@ -365,7 +372,7 @@
           <strong>${escapeHtml(location.name)}</strong>
           <address>${escapeHtml([location.addressLine1, location.city, location.country].filter(Boolean).join(', '))}</address>
           ${location.distanceKilometers != null ? `<span class="dm-locator__distance">${Number(location.distanceKilometers).toFixed(1)} km away</span>` : ''}
-          <button type="button" class="dm-locator__details" data-dm-details="${escapeHtml(location.id)}">View details</button>
+          <button type="button" class="dm-locator__details" data-dm-details="${escapeHtml(location.id)}">${translate('viewDetails', 'View details')}</button>
         </div>
       `).join('');
       count.textContent = `${visible.length} ${visible.length === 1 ? 'location' : 'locations'}`;
@@ -399,8 +406,10 @@
         removePhotoMarkers();
         return;
       }
+      const sourceFeatures = map.querySourceFeatures('dm-locations') || [];
+      const sourceReady = sourceFeatures.length > 0;
       const visibleIds = new Set(
-        (map.querySourceFeatures('dm-locations') || [])
+        sourceFeatures
           .filter((feature) => !feature.properties?.point_count)
           .map((feature) => String(feature.properties?.id)),
       );
@@ -426,11 +435,17 @@
           photoMarkers.set(String(location.id), marker);
         } else {
           marker.setLngLat([Number(location.longitude), Number(location.latitude)]);
+          if (!marker.getElement().isConnected) marker.addTo(map);
         }
-        marker.getElement().style.display = visibleIds.has(String(location.id)) ? '' : 'none';
+        const inViewport = map.getBounds().contains([Number(location.longitude), Number(location.latitude)]);
+        const isVisible = sourceReady ? visibleIds.has(String(location.id)) : inViewport;
+        marker.getElement().style.display = isVisible ? '' : 'none';
       });
       photoMarkers.forEach((marker, id) => {
-        if (!locations.some((location) => String(location.id) === id)) marker.remove();
+        if (!locations.some((location) => String(location.id) === id)) {
+          marker.remove();
+          photoMarkers.delete(id);
+        }
       });
     };
 
@@ -489,7 +504,12 @@
               suppressNextMoveend = false;
               return;
             }
-
+            if (viewportSearchActive) {
+              if (viewportSearchTimer) clearTimeout(viewportSearchTimer);
+              viewportSearchTimer = setTimeout(searchCurrentArea, 300);
+            } else if (searchAreaButton) {
+              searchAreaButton.hidden = false;
+            }
           });
           map.on('sourcedata', (event) => {
             if (event.sourceId === 'dm-locations') syncPhotoMarkers();
@@ -512,13 +532,13 @@
         map.on('mouseenter', 'dm-points', () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', 'dm-points', () => { map.getCanvas().style.cursor = ''; });
       } catch {
-        mapContainer.querySelector('.dm-locator__map-placeholder')?.replaceChildren(document.createTextNode('Map unavailable'));
+        mapContainer.querySelector('.dm-locator__map-placeholder')?.replaceChildren(document.createTextNode(translate('mapUnavailable', 'Map unavailable')));
       }
     };
 
     const search = async (params = new URLSearchParams()) => {
       const sequence = ++searchSequence;
-      status.textContent = 'Loading';
+      status.textContent = translate('loading', 'Loading');
       empty.hidden = true;
       error.hidden = true;
       try {
@@ -540,14 +560,30 @@
       }
     };
 
+    const searchCurrentArea = () => {
+      if (!map) return;
+      renderList(visibleLocations());
+      status.textContent = '';
+    };
+
+    searchAreaButton?.addEventListener('click', () => {
+      viewportSearchActive = true;
+      searchAreaButton.hidden = true;
+      searchCurrentArea();
+    });
+
     form.addEventListener('submit', (event) => {
       event.preventDefault();
+      viewportSearchActive = false;
+      if (searchAreaButton) searchAreaButton.hidden = true;
       search(new URLSearchParams(new FormData(form)));
     });
 
     root.querySelector('[data-dm-locate]')?.addEventListener('click', () => {
       if (!navigator.geolocation) return;
       navigator.geolocation.getCurrentPosition(({coords}) => {
+        viewportSearchActive = false;
+        if (searchAreaButton) searchAreaButton.hidden = true;
         search(new URLSearchParams({latitude: String(coords.latitude), longitude: String(coords.longitude), radius: '50'}));
       });
     });

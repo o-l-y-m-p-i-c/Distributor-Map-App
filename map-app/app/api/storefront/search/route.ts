@@ -52,7 +52,7 @@ export async function GET(request: Request) {
         : null;
     const candidates = bounds
       ? await prisma.location.findMany({ where: { ...filters, latitude: { not: null, gte: bounds.minLatitude, lte: bounds.maxLatitude }, longitude: { not: null, gte: bounds.minLongitude, lte: bounds.maxLongitude } } })
-      : await prisma.location.findMany({ where: { ...filters, ...(input.q ? { OR: [{ name: { contains: input.q, mode: 'insensitive' } }, { city: { contains: input.q, mode: 'insensitive' } }, { postalCode: { contains: input.q, mode: 'insensitive' } }, { country: { contains: input.q, mode: 'insensitive' } }] } : {}) }, take: 100 });
+      : await prisma.location.findMany({ where: { ...filters, ...(input.q ? { OR: [{ name: { contains: input.q, mode: 'insensitive' } }, { addressLine1: { contains: input.q, mode: 'insensitive' } }, { addressLine2: { contains: input.q, mode: 'insensitive' } }, { city: { contains: input.q, mode: 'insensitive' } }, { postalCode: { contains: input.q, mode: 'insensitive' } }, { country: { contains: input.q, mode: 'insensitive' } }] } : {}) }, take: 100 });
 
     const items = candidates.map((location) => {
       const distance = latitude != null && longitude != null && location.latitude != null && location.longitude != null

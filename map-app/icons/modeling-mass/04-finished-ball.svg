@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">Finished modeling mass</title>
+  <desc id="desc">A finished purple ball of modeling mass with golden sparkles</desc>
+  <g fill="none" stroke="#8D4D2F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M25 54c0-15 12-27 27-27s27 12 27 27-12 28-27 28-27-13-27-28Z" fill="#6B2E83"/>
+    <path d="M34 40c5-7 11-10 18-10" stroke="#8E52A1"/>
+    <path d="m72 17 2 6 6 2-6 2-2 6-2-6-6-2 6-2z" fill="#D7A13B"/>
+    <path d="m19 29 2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#D7A13B"/>
+    <path d="m77 65 2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#D7A13B"/>
+  </g>
+</svg>
