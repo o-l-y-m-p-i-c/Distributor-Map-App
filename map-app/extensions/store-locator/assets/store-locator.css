@@ -27,3 +27,38 @@
   color: var(--dm-ink, currentColor);
   background: var(--dm-surface, rgba(0, 0, 0, 0.06));
 }
+
+.dm-locator__search .dm-locator__clear-search {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  z-index: 2;
+  display: grid;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  min-height: 28px;
+  margin: 0;
+  padding: 0 !important;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: var(--dm-ink, #092633) !important;
+  background: transparent !important;
+  font-family: var(--dm-font-family, inherit);
+  font-size: 18px !important;
+  font-weight: 500;
+  line-height: 1;
+  transform: translateY(-50%);
+  box-shadow: none;
+}
+
+.dm-locator__search .dm-locator__clear-search:hover {
+  color: var(--dm-button-text, #fff) !important;
+  background: var(--dm-primary, #176274) !important;
+  filter: none;
+}
+
+.dm-locator__search input {
+  padding-right: 54px;
+}
