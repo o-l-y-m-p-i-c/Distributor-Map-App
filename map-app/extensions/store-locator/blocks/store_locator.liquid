@@ -17,9 +17,6 @@
         <div class="dm-locator__description rte">{{ block.settings.description }}</div>
       {% endif %}
     </div>
-    {% if block.settings.enable_geolocation %}
-      <button type="button" class="dm-locator__locate" data-dm-locate>{{ 'store_locator.use_location' | t }}</button>
-    {% endif %}
   </div>
 
   <form class="dm-locator__search" data-dm-search>
@@ -109,7 +106,6 @@
     { "type": "richtext", "id": "heading", "label": "Heading", "default": "<p>Find a distributor near you</p>" },
     { "type": "richtext", "id": "description", "label": "Description", "default": "<p>Search our retail network and discover where to find our products.</p>" },
     { "type": "text", "id": "search_placeholder", "label": "Search placeholder", "default": "Search by location name" },
-    { "type": "checkbox", "id": "enable_geolocation", "label": "Show use location button", "default": true },
     { "type": "select", "id": "marker_style", "label": "Marker style", "default": "default", "options": [
       { "value": "default", "label": "Default marker" },
       { "value": "photo", "label": "Photo marker" }
