@@ -160,3 +160,24 @@
   border-radius: 26px;
   box-shadow: 0 14px 36px rgba(9, 38, 51, 0.1);
 }
+
+.dm-locator__results-head {
+  position: sticky;
+  top: -18px;
+  z-index: 5;
+  margin: -18px -18px 14px;
+  padding: 18px 18px 12px;
+  background: var(--dm-surface, #fff);
+  box-shadow: 0 8px 12px -12px rgba(9, 38, 51, 0.45);
+}
+
+.dm-locator__results-head::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: -14px;
+  left: 0;
+  height: 14px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, var(--dm-surface, #fff), transparent);
+}
