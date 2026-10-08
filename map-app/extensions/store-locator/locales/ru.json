@@ -31,7 +31,8 @@
     "no_locations_area": "В этом районе локации не найдены.",
     "map_unavailable": "Карта недоступна",
     "clear_search": "Очистить поиск",
-    "show_all_locations": "Показать все локации"
+    "show_all_locations": "Показать все локации",
+    "location": "локация"
   },
   "settings": {
     "location_card_style": "Стиль карточки локации",

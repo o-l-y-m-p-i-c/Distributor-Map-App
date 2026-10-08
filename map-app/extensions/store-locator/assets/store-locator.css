@@ -417,3 +417,13 @@
   justify-self: end;
   padding: 5px 11px;
 }
+
+.dm-locator__card .dm-locator__details {
+  white-space: nowrap;
+}
+
+.dm-locator__search > button[type="submit"] {
+  flex: 0 0 auto;
+  min-width: max-content;
+  white-space: nowrap;
+}

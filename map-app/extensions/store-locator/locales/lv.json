@@ -31,7 +31,8 @@
     "no_locations_area": "Šajā apgabalā atrašanās vietas nav atrastas.",
     "map_unavailable": "Karte nav pieejama",
     "clear_search": "Notīrīt meklēšanu",
-    "show_all_locations": "Rādīt visas atrašanās vietas"
+    "show_all_locations": "Rādīt visas atrašanās vietas",
+    "location": "atrašanās vieta"
   },
   "settings": {
     "location_card_style": "Atrašanās vietas kartītes stils",

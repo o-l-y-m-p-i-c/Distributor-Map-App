@@ -31,7 +31,8 @@
     "no_locations_area": "No locations in this area.",
     "map_unavailable": "Map unavailable",
     "clear_search": "Clear search",
-    "show_all_locations": "Show all locations"
+    "show_all_locations": "Show all locations",
+    "location": "location"
   },
   "settings": {
     "location_card_style": "Location card style",

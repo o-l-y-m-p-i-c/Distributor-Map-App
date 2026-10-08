@@ -393,7 +393,7 @@
           </div>
         </div>
       `).join('');
-      count.textContent = `${visible.length} ${visible.length === 1 ? 'location' : 'locations'}`;
+      count.textContent = `${visible.length} ${visible.length === 1 ? translate('location', 'location') : translate('locations', 'locations')}`;
       empty.hidden = visible.length > 0;
       list.querySelectorAll('[data-dm-location]').forEach((card) => {
         card.addEventListener('click', () => selectLocation(card.dataset.dmLocation));
