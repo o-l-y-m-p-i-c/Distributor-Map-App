@@ -6,7 +6,7 @@ type FieldDefinition = {key: string; name: string; type: string; description?: s
 const DEFINITION_CREATE = `mutation MetaobjectDefinitionCreate($definition: MetaobjectDefinitionCreateInput!) { metaobjectDefinitionCreate(definition: $definition) { metaobjectDefinition { id type } userErrors { field message } } }`;
 const DEFINITION_QUERY = `query MetaobjectDefinition($type: String!) { metaobjectDefinitionByType(type: $type) { id type } }`;
 const SETTINGS_QUERY = `query RetailLocatorSettings($handle: MetaobjectHandleInput!) { metaobjectByHandle(handle: $handle) { id handle fields { key value } } }`;
-const UPSERT = `mutation MetaobjectUpsert($handle: MetaobjectHandleInput!, $values: JSON!) { metaobjectUpsert(handle: $handle, values: $values) { metaobject { id handle values } userErrors { field message code } } }`;
+const UPSERT = `mutation MetaobjectUpsert($handle: MetaobjectHandleInput!, $fields: [MetaobjectFieldInput!]!) { metaobjectUpsert(handle: $handle, metaobject: { capabilities: { publishable: { status: ACTIVE } }, fields: $fields }) { metaobject { id handle values } userErrors { field message code } } }`;
 
 export const LOCATION_TYPE = '$app:retail_location';
 export const SETTINGS_TYPE = '$app:retail_locator_settings';
@@ -63,13 +63,13 @@ export async function ensureDistributorDefinitions(shop: ShopifyShop) {
 }
 
 export async function upsertMetaobject(shop: ShopifyShop, type: string, handle: string, values: Record<string, string>) {
-  const result = await adminGraphql<{metaobjectUpsert: {metaobject: {id: string; handle: string} | null; userErrors: Array<{message: string}>}}>(shop, UPSERT, {handle: {type, handle}, values});
+  const result = await adminGraphql<{metaobjectUpsert: {metaobject: {id: string; handle: string} | null; userErrors: Array<{message: string}>}}>(shop, UPSERT, {handle: {type, handle}, fields: Object.entries(values).map(([key, value]) => ({key, value: String(value)}))});
   if (result.metaobjectUpsert.userErrors.length || !result.metaobjectUpsert.metaobject) throw new Error(result.metaobjectUpsert.userErrors.map((error) => error.message).join('; ') || `Unable to upsert ${type}/${handle}`);
   return result.metaobjectUpsert.metaobject;
 }
 
 export async function upsertMetaobjectWithToken(shopDomain: string, accessToken: string, type: string, handle: string, values: Record<string, string>) {
-  const result = await adminGraphqlWithToken<{metaobjectUpsert: {metaobject: {id: string; handle: string} | null; userErrors: Array<{message: string}>}}>(shopDomain, accessToken, UPSERT, {handle: {type, handle}, values});
+  const result = await adminGraphqlWithToken<{metaobjectUpsert: {metaobject: {id: string; handle: string} | null; userErrors: Array<{message: string}>}}>(shopDomain, accessToken, UPSERT, {handle: {type, handle}, fields: Object.entries(values).map(([key, value]) => ({key, value: String(value)}))});
   if (result.metaobjectUpsert.userErrors.length || !result.metaobjectUpsert.metaobject) throw new Error(result.metaobjectUpsert.userErrors.map((error) => error.message).join('; ') || `Unable to upsert ${type}/${handle}`);
   return result.metaobjectUpsert.metaobject;
 }
