@@ -523,6 +523,7 @@
               if (viewportSearchTimer) clearTimeout(viewportSearchTimer);
               viewportSearchTimer = setTimeout(searchCurrentArea, 300);
             } else if (searchAreaButton) {
+              searchAreaButton.textContent = translate('searchArea', 'Search this area');
               searchAreaButton.hidden = false;
             }
           });
@@ -621,8 +622,15 @@
     };
 
     searchAreaButton?.addEventListener('click', () => {
+      if (viewportSearchActive) {
+        viewportSearchActive = false;
+        searchAreaButton.hidden = true;
+        search(new URLSearchParams(new FormData(form)));
+        return;
+      }
       viewportSearchActive = true;
-      searchAreaButton.hidden = true;
+      searchAreaButton.textContent = 'Show all locations';
+      searchAreaButton.hidden = false;
       searchCurrentArea();
     });
 
