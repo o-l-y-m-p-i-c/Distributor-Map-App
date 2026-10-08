@@ -87,3 +87,9 @@
   touch-action: none !important;
   overscroll-behavior: contain !important;
 }
+
+.dm-locator__map,
+.dm-locator__map canvas {
+  touch-action: pan-y !important;
+  overscroll-behavior: auto !important;
+}
