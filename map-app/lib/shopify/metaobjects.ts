@@ -8,8 +8,8 @@ const DEFINITION_QUERY = `query MetaobjectDefinition($type: String!) { metaobjec
 const SETTINGS_QUERY = `query RetailLocatorSettings($handle: MetaobjectHandleInput!) { metaobjectByHandle(handle: $handle) { id handle fields { key value } } }`;
 const UPSERT = `mutation MetaobjectUpsert($handle: MetaobjectHandleInput!, $fields: [MetaobjectFieldInput!]!) { metaobjectUpsert(handle: $handle, metaobject: { capabilities: { publishable: { status: ACTIVE } }, fields: $fields }) { metaobject { id handle values } userErrors { field message code } } }`;
 
-export const LOCATION_TYPE = '$app:retail_location';
-export const SETTINGS_TYPE = '$app:retail_locator_settings';
+export const LOCATION_TYPE = '$app:distributor_location_v2';
+export const SETTINGS_TYPE = '$app:distributor_locator_settings_v2';
 
 const locationFields: FieldDefinition[] = [
   {key: 'external_id', name: 'External ID', type: 'single_line_text_field'},

@@ -38,121 +38,121 @@ prefix = "apps"
 
 
 
-[metaobjects.app.retail_location]
-name = "Retail location"
+[metaobjects.app.distributor_location_v2]
+name = "Distributor location v2"
 description = "A store, distributor, retailer, dealer, or stockist location."
 display_name_field = "name"
 access.admin = "merchant_read_write"
 access.storefront = "public_read"
 capabilities.publishable = true
 
-[metaobjects.app.retail_location.fields.name]
+[metaobjects.app.distributor_location_v2.fields.name]
 name = "Name"
 type = "single_line_text_field"
 
-[metaobjects.app.retail_location.fields.external_id]
+[metaobjects.app.distributor_location_v2.fields.external_id]
 name = "External ID"
 type = "single_line_text_field"
 
-[metaobjects.app.retail_location.fields.slug]
+[metaobjects.app.distributor_location_v2.fields.slug]
 name = "Slug"
 type = "single_line_text_field"
 
-[metaobjects.app.retail_location.fields.address_line_1]
+[metaobjects.app.distributor_location_v2.fields.address_line_1]
 name = "Address line 1"
 type = "single_line_text_field"
 
-[metaobjects.app.retail_location.fields.city]
+[metaobjects.app.distributor_location_v2.fields.city]
 name = "City"
 type = "single_line_text_field"
-[metaobjects.app.retail_location.fields.address_line_2]
+[metaobjects.app.distributor_location_v2.fields.address_line_2]
 name = "Address line 2"
 type = "single_line_text_field"
 
-[metaobjects.app.retail_location.fields.state]
+[metaobjects.app.distributor_location_v2.fields.state]
 name = "State"
 type = "single_line_text_field"
 
-[metaobjects.app.retail_location.fields.phones]
+[metaobjects.app.distributor_location_v2.fields.phones]
 name = "Phones"
 type = "json"
 
-[metaobjects.app.retail_location.fields.emails]
+[metaobjects.app.distributor_location_v2.fields.emails]
 name = "Emails"
 type = "json"
 
-[metaobjects.app.retail_location.fields.websites]
+[metaobjects.app.distributor_location_v2.fields.websites]
 name = "Websites"
 type = "json"
 
 
-[metaobjects.app.retail_location.fields.postal_code]
+[metaobjects.app.distributor_location_v2.fields.postal_code]
 name = "Postal code"
 type = "single_line_text_field"
 
-[metaobjects.app.retail_location.fields.country]
+[metaobjects.app.distributor_location_v2.fields.country]
 name = "Country"
 type = "single_line_text_field"
 
-[metaobjects.app.retail_location.fields.country_code]
+[metaobjects.app.distributor_location_v2.fields.country_code]
 name = "Country code"
 type = "single_line_text_field"
 
-[metaobjects.app.retail_location.fields.latitude]
+[metaobjects.app.distributor_location_v2.fields.latitude]
 name = "Latitude"
 type = "number_decimal"
 
-[metaobjects.app.retail_location.fields.longitude]
+[metaobjects.app.distributor_location_v2.fields.longitude]
 name = "Longitude"
 type = "number_decimal"
 
-[metaobjects.app.retail_location.fields.description]
+[metaobjects.app.distributor_location_v2.fields.description]
 name = "Description"
 type = "multi_line_text_field"
 
-[metaobjects.app.retail_location.fields.image_urls]
+[metaobjects.app.distributor_location_v2.fields.image_urls]
 name = "Image URLs"
 type = "json"
 
-[metaobjects.app.retail_location.fields.button_url]
+[metaobjects.app.distributor_location_v2.fields.button_url]
 name = "Button URL"
 type = "url"
 
-[metaobjects.app.retail_location.fields.type]
+[metaobjects.app.distributor_location_v2.fields.type]
 name = "Location type"
 type = "single_line_text_field"
 
-[metaobjects.app.retail_location.fields.published]
+[metaobjects.app.distributor_location_v2.fields.published]
 name = "Published"
 type = "boolean"
 
-[metaobjects.app.retail_location.fields.opening_hours]
+[metaobjects.app.distributor_location_v2.fields.opening_hours]
 name = "Opening hours"
 type = "json"
 
-[metaobjects.app.retail_location.fields.custom_values]
+[metaobjects.app.distributor_location_v2.fields.custom_values]
 name = "Custom values"
 type = "json"
 
-[metaobjects.app.retail_location.fields.product_ids]
+[metaobjects.app.distributor_location_v2.fields.product_ids]
 name = "Product IDs"
 type = "json"
 
-[metaobjects.app.retail_locator_settings]
-name = "Retail locator settings"
+[metaobjects.app.distributor_locator_settings_v2]
+name = "Distributor locator settings v2"
 description = "Store locator display and modal settings."
 display_name_field = "map_style"
 access.admin = "merchant_read_write"
 access.storefront = "public_read"
 
-[metaobjects.app.retail_locator_settings.fields.map_style]
+[metaobjects.app.distributor_locator_settings_v2.fields.map_style]
 name = "Map style"
 type = "single_line_text_field"
 
-[metaobjects.app.retail_locator_settings.fields.settings_json]
+[metaobjects.app.distributor_locator_settings_v2.fields.settings_json]
 name = "Settings JSON"
 type = "json"
 
-[metaobjects.app.retail_locator_settings.fields.modal_config]
+[metaobjects.app.distributor_locator_settings_v2.fields.modal_config]
 name = "Modal configuration"
 type = "json"

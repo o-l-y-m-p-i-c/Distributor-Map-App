@@ -1,6 +1,6 @@
 import {adminGraphqlWithToken} from '@/lib/shopify/admin-graphql';
 
-export const LOCATION_TYPE = '$app:retail_location';
+export const LOCATION_TYPE = '$app:distributor_location_v2';
 
 type MetaobjectNode = {id: string; handle: string; fields: Array<{key: string; value: string | null}>};
 type LocationInput = {name: string; slug?: string; addressLine1: string; addressLine2?: string | null; city: string; state?: string | null; postalCode: string; country: string; countryCode: string; latitude?: number | null; longitude?: number | null; phones?: string[]; emails?: string[]; websites?: string[]; description?: string | null; imageUrls?: string[]; buttonUrl?: string | null; type?: string; published?: boolean; customValues?: Record<string, string>};
