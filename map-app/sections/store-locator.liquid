@@ -78,7 +78,9 @@
 [
   {% for location in metaobjects['app--427145920513--retail_location'].values %}
     {
-      "id": {{ location.id | json }},
+      "id": {{ location.handle | json }},
+      "metaobjectId": {{ location.id | json }},
+      "handle": {{ location.handle | json }},
       "name": {{ location.name.value | json }},
       "addressLine1": {{ location.address_line_1.value | json }},
       "city": {{ location.city.value | json }},

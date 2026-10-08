@@ -1,29 +1,25 @@
-import { NextResponse } from 'next/server';
-import { z } from 'zod';
-import { authenticateAdminRequest, ShopifyAuthenticationError } from '@/lib/auth/shopify';
-import { prisma } from '@/lib/db/client';
+import {NextResponse} from 'next/server';
+import {z} from 'zod';
+import {authenticateShopifyRequest, ShopifyAuthenticationError} from '@/lib/auth/shopify';
+import {deleteMetaobjectLocation, findMetaobjectLocation, upsertMetaobjectLocation} from '@/lib/shopify/location-metaobjects';
 
-const bulkSchema = z.object({
-  ids: z.array(z.string().min(1)).min(1).max(500),
-  action: z.enum(['publish', 'unpublish', 'delete']),
-});
+const inputSchema = z.object({ids: z.array(z.string().min(1)).min(1).max(100), action: z.enum(['publish', 'unpublish', 'delete'])});
 
 export async function POST(request: Request) {
   try {
-    const { shop } = await authenticateAdminRequest(request);
-    const { ids, action } = bulkSchema.parse(await request.json());
-    const where = { id: { in: ids }, shopId: shop.id };
-
-    if (action === 'delete') {
-      const result = await prisma.location.deleteMany({ where });
-      return NextResponse.json({ deleted: result.count });
+    const {shopDomain, accessToken} = await authenticateShopifyRequest(request);
+    const input = inputSchema.parse(await request.json());
+    let count = 0;
+    for (const id of input.ids) {
+      const location = await findMetaobjectLocation(shopDomain, accessToken, id);
+      if (!location) continue;
+      if (input.action === 'delete') await deleteMetaobjectLocation(shopDomain, accessToken, id);
+      else await upsertMetaobjectLocation(shopDomain, accessToken, {...location, published: input.action === 'publish'});
+      count += 1;
     }
-
-    const result = await prisma.location.updateMany({ where, data: { published: action === 'publish' } });
-    return NextResponse.json({ updated: result.count });
+    return NextResponse.json({count});
   } catch (error) {
-    if (error instanceof z.ZodError) return NextResponse.json({ error: 'Invalid bulk request' }, { status: 400 });
-    console.error('Admin locations bulk failed', error);
-    return NextResponse.json({ error: 'Unable to authenticate or update locations' }, { status: error instanceof ShopifyAuthenticationError ? 401 : 500 });
+    if (error instanceof z.ZodError) return NextResponse.json({error: 'Invalid bulk action'}, {status: 400});
+    return NextResponse.json({error: error instanceof ShopifyAuthenticationError ? error.message : 'Unable to update Metaobject locations'}, {status: error instanceof ShopifyAuthenticationError ? 401 : 500});
   }
 }
