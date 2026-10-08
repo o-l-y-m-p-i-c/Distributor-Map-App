@@ -7,8 +7,8 @@ const DEFINITION_CREATE = `mutation MetaobjectDefinitionCreate($definition: Meta
 const DEFINITION_QUERY = `query MetaobjectDefinition($type: String!) { metaobjectDefinitionByType(type: $type) { id type } }`;
 const UPSERT = `mutation MetaobjectUpsert($handle: MetaobjectHandleInput!, $values: JSON!) { metaobjectUpsert(handle: $handle, values: $values) { metaobject { id handle values } userErrors { field message code } } }`;
 
-export const LOCATION_TYPE = 'retail_location';
-export const SETTINGS_TYPE = 'retail_locator_settings';
+export const LOCATION_TYPE = '$app:retail_location';
+export const SETTINGS_TYPE = '$app:retail_locator_settings';
 
 const locationFields: FieldDefinition[] = [
   {key: 'external_id', name: 'External ID', type: 'single_line_text_field'},

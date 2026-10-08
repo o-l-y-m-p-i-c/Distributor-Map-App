@@ -21,7 +21,7 @@ embedded_app_direct_api_access = true
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_products,write_files"
+scopes = "read_products,write_files,read_metaobjects,write_metaobjects,read_metaobject_definitions,write_metaobject_definitions"
 optional_scopes = [ ]
 use_legacy_install_flow = false
 
@@ -37,3 +37,98 @@ subpath = "distributor-map"
 prefix = "apps"
 
 
+
+[metaobjects.app.retail_location]
+name = "Retail location"
+description = "A store, distributor, retailer, dealer, or stockist location."
+display_name_field = "name"
+access.admin = "merchant_read_write"
+access.storefront = "public_read"
+capabilities.publishable = true
+
+[metaobjects.app.retail_location.fields.name]
+name = "Name"
+type = "single_line_text_field"
+
+[metaobjects.app.retail_location.fields.external_id]
+name = "External ID"
+type = "single_line_text_field"
+
+[metaobjects.app.retail_location.fields.slug]
+name = "Slug"
+type = "single_line_text_field"
+
+[metaobjects.app.retail_location.fields.address_line_1]
+name = "Address line 1"
+type = "single_line_text_field"
+
+[metaobjects.app.retail_location.fields.city]
+name = "City"
+type = "single_line_text_field"
+
+[metaobjects.app.retail_location.fields.postal_code]
+name = "Postal code"
+type = "single_line_text_field"
+
+[metaobjects.app.retail_location.fields.country]
+name = "Country"
+type = "single_line_text_field"
+
+[metaobjects.app.retail_location.fields.country_code]
+name = "Country code"
+type = "single_line_text_field"
+
+[metaobjects.app.retail_location.fields.latitude]
+name = "Latitude"
+type = "number_decimal"
+
+[metaobjects.app.retail_location.fields.longitude]
+name = "Longitude"
+type = "number_decimal"
+
+[metaobjects.app.retail_location.fields.description]
+name = "Description"
+type = "multi_line_text_field"
+
+[metaobjects.app.retail_location.fields.image_urls]
+name = "Image URLs"
+type = "json"
+
+[metaobjects.app.retail_location.fields.type]
+name = "Location type"
+type = "single_line_text_field"
+
+[metaobjects.app.retail_location.fields.published]
+name = "Published"
+type = "boolean"
+
+[metaobjects.app.retail_location.fields.opening_hours]
+name = "Opening hours"
+type = "json"
+
+[metaobjects.app.retail_location.fields.custom_values]
+name = "Custom values"
+type = "json"
+
+[metaobjects.app.retail_location.fields.product_ids]
+name = "Product IDs"
+type = "json"
+
+[metaobjects.app.retail_locator_settings]
+name = "Retail locator settings"
+description = "Store locator display and modal settings."
+display_name_field = "map_style"
+access.admin = "merchant_read_write"
+access.storefront = "public_read"
+
+[metaobjects.app.retail_locator_settings.fields.map_style]
+name = "Map style"
+type = "single_line_text_field"
+
+[metaobjects.app.retail_locator_settings.fields.settings_json]
+name = "Settings JSON"
+type = "json"
+
+[metaobjects.app.retail_locator_settings.fields.modal_config]
+name = "Modal configuration"
+type = "json"
