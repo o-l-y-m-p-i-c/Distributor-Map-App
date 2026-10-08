@@ -62,3 +62,22 @@
 .dm-locator__search input {
   padding-right: 54px;
 }
+
+.dm-locator__search-field {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dm-locator__search-field input {
+  width: 100%;
+}
+
+.dm-locator__search .dm-locator__search-field .dm-locator__clear-search {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  margin: 0;
+  transform: translateY(-50%);
+}
