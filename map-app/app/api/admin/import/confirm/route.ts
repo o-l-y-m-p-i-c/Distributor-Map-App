@@ -51,6 +51,6 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof z.ZodError) return NextResponse.json({error: 'Invalid import rows'}, {status: 400});
     console.error('Metaobject CSV import failed', error);
-    return NextResponse.json({error: error instanceof ShopifyAuthenticationError ? error.message : 'Unable to import Metaobject locations'}, {status: error instanceof ShopifyAuthenticationError ? 401 : 500});
+    return NextResponse.json({error: error instanceof ShopifyAuthenticationError ? error.message : error instanceof Error ? error.message : 'Unable to import Metaobject locations'}, {status: error instanceof ShopifyAuthenticationError ? 401 : 500});
   }
 }

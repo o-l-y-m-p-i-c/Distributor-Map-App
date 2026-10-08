@@ -65,6 +65,26 @@ type = "single_line_text_field"
 [metaobjects.app.retail_location.fields.city]
 name = "City"
 type = "single_line_text_field"
+[metaobjects.app.retail_location.fields.address_line_2]
+name = "Address line 2"
+type = "single_line_text_field"
+
+[metaobjects.app.retail_location.fields.state]
+name = "State"
+type = "single_line_text_field"
+
+[metaobjects.app.retail_location.fields.phones]
+name = "Phones"
+type = "json"
+
+[metaobjects.app.retail_location.fields.emails]
+name = "Emails"
+type = "json"
+
+[metaobjects.app.retail_location.fields.websites]
+name = "Websites"
+type = "json"
+
 
 [metaobjects.app.retail_location.fields.postal_code]
 name = "Postal code"
@@ -93,6 +113,10 @@ type = "multi_line_text_field"
 [metaobjects.app.retail_location.fields.image_urls]
 name = "Image URLs"
 type = "json"
+
+[metaobjects.app.retail_location.fields.button_url]
+name = "Button URL"
+type = "url"
 
 [metaobjects.app.retail_location.fields.type]
 name = "Location type"
