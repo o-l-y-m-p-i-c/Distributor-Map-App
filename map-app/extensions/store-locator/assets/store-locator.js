@@ -490,6 +490,12 @@
 
     const initializeMap = async () => {
       try {
+        const isolateQualifiedGesture = (event) => {
+          if (event.type === 'wheel' && (event.ctrlKey || event.metaKey)) event.stopPropagation();
+          if (event.type === 'touchmove' && event.touches?.length > 1) event.stopPropagation();
+        };
+        mapContainer.addEventListener('wheel', isolateQualifiedGesture, {passive: true});
+        mapContainer.addEventListener('touchmove', isolateQualifiedGesture, {passive: true});
         const maplibregl = await loadMapLibre();
         map = new maplibregl.Map({container: mapContainer, style: 'https://tiles.openfreemap.org/styles/liberty', center: [0, 20], zoom: 1.5, attributionControl: true, cooperativeGestures: true});
         map.addControl(new maplibregl.NavigationControl(), 'top-right');
