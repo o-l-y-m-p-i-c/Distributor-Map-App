@@ -85,6 +85,11 @@ export async function upsertMetaobjectLocation(shopDomain: string, accessToken: 
   return parseLocation(data.metaobjectUpsert.metaobject);
 }
 
+export async function findMetaobjectLocation(shopDomain: string, accessToken: string, id: string) {
+  const locations = await listMetaobjectLocations(shopDomain, accessToken);
+  return locations.find((location) => location.id === id) ?? null;
+}
+
 export async function deleteMetaobjectLocation(shopDomain: string, accessToken: string, id: string) {
   const data = await adminGraphqlWithToken<{metaobjectDelete: {deletedId: string | null; userErrors: Array<{message: string}>}}>(shopDomain, accessToken, DELETE_MUTATION, {id});
   if (data.metaobjectDelete.userErrors.length || !data.metaobjectDelete.deletedId) throw new Error(data.metaobjectDelete.userErrors.map((error) => error.message).join('; ') || 'Unable to delete Metaobject location');
