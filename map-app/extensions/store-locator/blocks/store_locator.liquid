@@ -25,6 +25,7 @@
   <form class="dm-locator__search" data-dm-search>
     <label class="visually-hidden" for="dm-locator-query-{{ block.id }}">{{ 'store_locator.search_label' | t }}</label>
     <input id="dm-locator-query-{{ block.id }}" type="search" name="q" placeholder="{{ block.settings.search_placeholder | escape }}" autocomplete="off">
+    <button type="button" class="dm-locator__clear-search" data-dm-clear-search aria-label="Clear search" hidden>&#215;</button>
     <button type="submit">{{ 'store_locator.search' | t }}</button>
   </form>
 

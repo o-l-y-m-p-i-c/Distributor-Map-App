@@ -25,6 +25,8 @@
 
   roots.forEach((root) => {
     const form = root.querySelector('[data-dm-search]');
+    const searchInput = form?.querySelector('input[name="q"]');
+    const clearSearchButton = root.querySelector('[data-dm-clear-search]');
     const list = root.querySelector('[data-dm-list]');
     const count = root.querySelector('[data-dm-count]');
     const status = root.querySelector('[data-dm-status]');
@@ -63,7 +65,7 @@
     const markerShape = root.dataset.dmMarkerShape || '50%';
     const photoMarkers = new Map();
 
-    if (!form || !list || !count || !status || !empty || !error || !mapContainer || !endpoint) return;
+    if (!form || !searchInput || !list || !count || !status || !empty || !error || !mapContainer || !endpoint) return;
 
     const normalizeThemeColor = (value) => {
       const color = String(value ?? '').trim();
@@ -548,6 +550,22 @@
         mapContainer.querySelector('.dm-locator__map-placeholder')?.replaceChildren(document.createTextNode(translate('mapUnavailable', 'Map unavailable')));
       }
     };
+
+    const updateClearSearchButton = () => {
+      if (clearSearchButton) clearSearchButton.hidden = !searchInput.value;
+    };
+
+    clearSearchButton?.addEventListener('click', () => {
+      searchInput.value = '';
+      updateClearSearchButton();
+      search(new URLSearchParams());
+      searchInput.focus();
+    });
+
+    searchInput.addEventListener('input', () => {
+      updateClearSearchButton();
+      if (!searchInput.value.trim()) search(new URLSearchParams());
+    });
 
     const search = async (params = new URLSearchParams()) => {
       const sequence = ++searchSequence;
