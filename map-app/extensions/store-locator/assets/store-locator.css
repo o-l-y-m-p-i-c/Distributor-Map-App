@@ -280,3 +280,70 @@
   background: transparent;
   color: var(--dm-accent);
 }
+
+.dm-locator__card--photo-modern {
+  position: relative;
+  min-height: 190px;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  border-radius: 18px;
+  background: var(--dm-surface, #eef4f5);
+  box-shadow: 0 10px 28px rgba(9, 38, 51, 0.14);
+}
+
+.dm-locator__card--photo-modern.dm-locator__card--has-image {
+  color: #fff;
+}
+
+.dm-locator__card--photo-modern .dm-locator__card-image {
+  display: block;
+  width: 100%;
+  height: 190px;
+  object-fit: cover;
+  background: var(--dm-surface, #eef4f5);
+}
+
+.dm-locator__card--photo-modern.dm-locator__card--has-image::after {
+  position: absolute;
+  inset: 25% 0 0;
+  content: '';
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.82));
+}
+
+.dm-locator__card--photo-modern .dm-locator__card-content {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  padding: 42px 16px 15px;
+}
+
+.dm-locator__card--photo-modern:not(.dm-locator__card--has-image) .dm-locator__card-content {
+  position: relative;
+  padding: 16px;
+}
+
+.dm-locator__card--photo-modern strong {
+  margin-bottom: 5px;
+  font-size: 17px;
+}
+
+.dm-locator__card--photo-modern address {
+  color: inherit;
+  opacity: 0.86;
+}
+
+.dm-locator__card--photo-modern .dm-locator__details {
+  margin-top: 10px;
+  border-color: currentColor;
+  color: inherit;
+}
+
+.dm-locator__card--photo-modern .dm-locator__details:hover {
+  border-color: var(--dm-primary);
+  background: var(--dm-primary);
+  color: var(--dm-buttonText, #fff);
+}
