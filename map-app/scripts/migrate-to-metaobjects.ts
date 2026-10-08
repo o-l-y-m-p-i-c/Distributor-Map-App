@@ -1,7 +1,6 @@
 import 'dotenv/config';
 import {PrismaPg} from '@prisma/adapter-pg';
 import {PrismaClient} from '../generated/prisma/client';
-import {decryptAccessToken} from '../lib/security/token-encryption';
 import {ensureDistributorDefinitions, jsonValue, upsertMetaobject, LOCATION_TYPE, SETTINGS_TYPE} from '../lib/shopify/metaobjects';
 
 const connectionString = process.env.DIRECT_DATABASE_URL ?? process.env.DATABASE_URL;
