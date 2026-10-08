@@ -496,7 +496,7 @@
         mapContainer.addEventListener('touchmove', stopThemeGesture, {passive: false});
         mapContainer.addEventListener('touchend', stopThemeGesture, {passive: false});
         const maplibregl = await loadMapLibre();
-        map = new maplibregl.Map({container: mapContainer, style: 'https://tiles.openfreemap.org/styles/liberty', center: [0, 20], zoom: 1.5, attributionControl: true, cooperativeGestures: true});
+        map = new maplibregl.Map({container: mapContainer, style: 'https://tiles.openfreemap.org/styles/liberty', center: [0, 20], zoom: 1.5, attributionControl: true, cooperativeGestures: false});
         map.addControl(new maplibregl.NavigationControl(), 'top-right');
         map.on('load', () => {
           const styles = getComputedStyle(root);
