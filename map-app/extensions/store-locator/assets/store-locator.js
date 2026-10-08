@@ -385,7 +385,7 @@
     const renderList = (visible) => {
       list.innerHTML = visible.map((location) => `
         <div class="dm-locator__card dm-locator__card--${escapeHtml(cardStyle)}" role="button" tabindex="0" data-dm-location="${escapeHtml(location.id)}">
-          ${cardStyle === 'photo' && (location.imageUrls?.[0] || location.imageUrl) ? `<img class="dm-locator__card-image" src="${escapeHtml(location.imageUrls?.[0] || location.imageUrl)}" alt="${escapeHtml(location.name)}" loading="lazy">` : ''}
+          ${['photo', 'photo-left'].includes(cardStyle) && (location.imageUrls?.[0] || location.imageUrl) ? `<img class="dm-locator__card-image" src="${escapeHtml(location.imageUrls?.[0] || location.imageUrl)}" alt="${escapeHtml(location.name)}" loading="lazy">` : ''}
           <div class="dm-locator__card-content">
             <strong>${escapeHtml(location.name)}</strong>
             <address>${escapeHtml([location.addressLine1, location.city, location.country].filter(Boolean).join(', '))}</address>

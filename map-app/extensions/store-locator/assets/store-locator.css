@@ -181,3 +181,37 @@
   pointer-events: none;
   background: linear-gradient(to bottom, var(--dm-surface, #fff), transparent);
 }
+
+.dm-locator__card--photo-left {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.dm-locator__card--photo-left .dm-locator__card-image {
+  display: block;
+  width: 104px;
+  min-width: 104px;
+  min-height: 112px;
+  object-fit: cover;
+  background: var(--dm-surface, #eef4f5);
+}
+
+.dm-locator__card--photo-left .dm-locator__card-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 13px 14px;
+}
+
+.dm-locator__card--photo-left .dm-locator__details {
+  margin-top: 5px;
+}
+
+@media (max-width: 749px) {
+  .dm-locator__card--photo-left .dm-locator__card-image {
+    width: 88px;
+    min-width: 88px;
+  }
+}
