@@ -6,7 +6,7 @@ type MetaobjectNode = {id: string; handle: string; fields: Array<{key: string; v
 type LocationInput = {name: string; slug?: string; addressLine1: string; addressLine2?: string | null; city: string; state?: string | null; postalCode: string; country: string; countryCode: string; latitude?: number | null; longitude?: number | null; phones?: string[]; emails?: string[]; websites?: string[]; description?: string | null; imageUrls?: string[]; buttonUrl?: string | null; type?: string; published?: boolean; customValues?: Record<string, string>};
 
 const LIST_QUERY = `query RetailLocations($type: String!) { metaobjects(type: $type, first: 250) { nodes { id handle fields { key value } } } }`;
-const UPSERT_MUTATION = `mutation RetailLocationUpsert($handle: MetaobjectHandleInput!, $values: JSON!) { metaobjectUpsert(handle: $handle, values: $values) { metaobject { id handle fields { key value } } userErrors { field message code } } }`;
+const UPSERT_MUTATION = `mutation RetailLocationUpsert($handle: MetaobjectHandleInput!, $fields: [MetaobjectFieldInput!]!, $status: MetaobjectStatus!) { metaobjectUpsert(handle: $handle, metaobject: { capabilities: { publishable: { status: $status } }, fields: $fields }) { metaobject { id handle fields { key value } } userErrors { field message code } } }`;
 const DELETE_MUTATION = `mutation RetailLocationDelete($id: ID!) { metaobjectDelete(id: $id) { deletedId userErrors { field message code } } }`;
 
 function parseValue(value: string | null) {
@@ -78,9 +78,10 @@ export async function listMetaobjectLocations(shopDomain: string, accessToken: s
 }
 
 export async function upsertMetaobjectLocation(shopDomain: string, accessToken: string, input: LocationInput) {
+  const inputPublished = input.published ?? false;
   const values = locationValues(input);
   const handle = String(values.slug).replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 255);
-  const data = await adminGraphqlWithToken<{metaobjectUpsert: {metaobject: MetaobjectNode | null; userErrors: Array<{message: string}>}}>(shopDomain, accessToken, UPSERT_MUTATION, {handle: {type: LOCATION_TYPE, handle}, values});
+  const data = await adminGraphqlWithToken<{metaobjectUpsert: {metaobject: MetaobjectNode | null; userErrors: Array<{message: string}>}}>(shopDomain, accessToken, UPSERT_MUTATION, {handle: {type: LOCATION_TYPE, handle}, status: inputPublished ? 'ACTIVE' : 'DRAFT', fields: Object.entries(values).map(([key, value]) => ({key, value: String(value)}))});
   if (data.metaobjectUpsert.userErrors.length || !data.metaobjectUpsert.metaobject) throw new Error(data.metaobjectUpsert.userErrors.map((error) => error.message).join('; ') || 'Unable to save Metaobject location');
   return parseLocation(data.metaobjectUpsert.metaobject);
 }
