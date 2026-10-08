@@ -566,7 +566,7 @@
           return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         };
         const local = snapshotLocations.map((location) => ({...location, distanceKilometers: distanceKm(location)})).filter((location) => {
-          const haystack = [location.name, location.addressLine1, location.city, location.postalCode, location.country, location.type].join(' ').toLowerCase();
+          const haystack = String(location.name || '').toLowerCase();
           return (!query || haystack.includes(query)) && (location.distanceKilometers == null || location.distanceKilometers <= radius);
         }).sort((left, right) => (left.distanceKilometers ?? Number.MAX_SAFE_INTEGER) - (right.distanceKilometers ?? Number.MAX_SAFE_INTEGER));
         if (sequence !== searchSequence) return;

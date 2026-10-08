@@ -43,12 +43,6 @@
   <form class="dm-locator__search" data-dm-search>
     <label class="visually-hidden" for="dm-locator-query-{{ section.id }}">Search locations</label>
     <input id="dm-locator-query-{{ section.id }}" type="search" name="q" placeholder="{{ section.settings.search_placeholder | escape }}" autocomplete="off">
-    <select name="radius" aria-label="Search radius">
-      <option value="20">20 km</option>
-      <option value="50" selected>50 km</option>
-      <option value="100">100 km</option>
-      <option value="200">200 km</option>
-    </select>
     <button type="submit">Search</button>
   </form>
 
@@ -130,7 +124,7 @@
     { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "FIND US" },
     { "type": "richtext", "id": "heading", "label": "Heading", "default": "<p>Find a distributor near you</p>" },
     { "type": "richtext", "id": "description", "label": "Description", "default": "<p>Search our retail network and discover where to find PickAqua.</p>" },
-    { "type": "text", "id": "search_placeholder", "label": "Search placeholder", "default": "Store name, city, postcode, or address" },
+    { "type": "text", "id": "search_placeholder", "label": "Search placeholder", "default": "Search by location name" },
     { "type": "checkbox", "id": "enable_geolocation", "label": "Show use location button", "default": true },
     { "type": "select", "id": "marker_style", "label": "Marker style", "default": "default", "options": [
       { "value": "default", "label": "Default marker" },
