@@ -56,7 +56,8 @@
 [
   {% for location in metaobjects['app--427145920513--distributor_location_v2'].values %}
     {
-      "id": {{ location.external_id.value | default: location.handle | default: location.id | json }},
+      "id": {{ forloop.index0 | json }},
+      "externalId": {{ location.external_id.value | default: location.handle | default: location.id | json }},
       "metaobjectId": {{ location.id | json }},
       "handle": {{ location.handle | json }},
       "name": {{ location.name.value | json }},
