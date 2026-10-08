@@ -2,6 +2,7 @@ import {NextResponse} from 'next/server';
 import {z} from 'zod';
 import {authenticateShopifyRequest, ShopifyAuthenticationError} from '@/lib/auth/shopify';
 import {upsertMetaobjectLocation} from '@/lib/shopify/location-metaobjects';
+import {ensureDistributorDefinitionsWithToken} from '@/lib/shopify/metaobjects';
 
 const rowSchema = z.object({
   external_id: z.string().trim().max(180).optional().default(''), name: z.string().trim().min(1), address: z.string().trim().min(1), city: z.string().trim().min(1), postal_code: z.string().trim().min(1), country: z.string().trim().min(1), country_code: z.string().optional().default(''),
@@ -15,6 +16,7 @@ export async function POST(request: Request) {
   try {
     const {shopDomain, accessToken} = await authenticateShopifyRequest(request);
     const body = await request.json() as {rows?: unknown[]};
+    await ensureDistributorDefinitionsWithToken(shopDomain, accessToken);
     const rows = z.array(rowSchema).max(5000).parse(body.rows ?? []);
     let imported = 0;
     for (const row of rows) {

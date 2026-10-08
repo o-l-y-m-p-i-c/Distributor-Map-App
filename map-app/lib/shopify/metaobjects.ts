@@ -49,6 +49,14 @@ const settingsFields: FieldDefinition[] = [
   {key: 'modal_config', name: 'Modal configuration', type: 'json'},
 ];
 
+export async function ensureMetaobjectDefinitionWithToken(shopDomain: string, accessToken: string, type: string, name: string, fields: FieldDefinition[]) {
+  const existing = await adminGraphqlWithToken<{metaobjectDefinitionByType: {id: string; type: string} | null}>(shopDomain, accessToken, DEFINITION_QUERY, {type});
+  if (existing.metaobjectDefinitionByType) return existing.metaobjectDefinitionByType;
+  const result = await adminGraphqlWithToken<{metaobjectDefinitionCreate: {metaobjectDefinition: {id: string; type: string} | null; userErrors: Array<{message: string}>}}>(shopDomain, accessToken, DEFINITION_CREATE, {definition: {type, name, description: `Distributor Map ${name}`, access: {storefront: 'PUBLIC_READ'}, fieldDefinitions: fields}});
+  if (result.metaobjectDefinitionCreate.userErrors.length || !result.metaobjectDefinitionCreate.metaobjectDefinition) throw new Error(result.metaobjectDefinitionCreate.userErrors.map((error) => error.message).join('; ') || `Unable to create ${type} definition`);
+  return result.metaobjectDefinitionCreate.metaobjectDefinition;
+}
+
 export async function ensureMetaobjectDefinition(shop: ShopifyShop, type: string, name: string, fields: FieldDefinition[]) {
   const existing = await adminGraphql<{metaobjectDefinitionByType: {id: string; type: string} | null}>(shop, DEFINITION_QUERY, {type});
   if (existing.metaobjectDefinitionByType) return existing.metaobjectDefinitionByType;
@@ -60,6 +68,11 @@ export async function ensureMetaobjectDefinition(shop: ShopifyShop, type: string
 export async function ensureDistributorDefinitions(shop: ShopifyShop) {
   await ensureMetaobjectDefinition(shop, LOCATION_TYPE, 'Retail location', locationFields);
   await ensureMetaobjectDefinition(shop, SETTINGS_TYPE, 'Retail locator settings', settingsFields);
+}
+
+export async function ensureDistributorDefinitionsWithToken(shopDomain: string, accessToken: string) {
+  await ensureMetaobjectDefinitionWithToken(shopDomain, accessToken, LOCATION_TYPE, 'Retail location', locationFields);
+  await ensureMetaobjectDefinitionWithToken(shopDomain, accessToken, SETTINGS_TYPE, 'Retail locator settings', settingsFields);
 }
 
 export async function upsertMetaobject(shop: ShopifyShop, type: string, handle: string, values: Record<string, string>) {

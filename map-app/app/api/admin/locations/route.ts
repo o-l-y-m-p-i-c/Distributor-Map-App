@@ -2,6 +2,7 @@ import {NextResponse} from 'next/server';
 import {z} from 'zod';
 import {authenticateShopifyRequest, ShopifyAuthenticationError} from '@/lib/auth/shopify';
 import {listMetaobjectLocations, upsertMetaobjectLocation} from '@/lib/shopify/location-metaobjects';
+import {ensureDistributorDefinitionsWithToken} from '@/lib/shopify/metaobjects';
 
 const locationSchema = z.object({
   name: z.string().trim().min(1).max(160),
@@ -35,6 +36,7 @@ export async function GET(request: Request) {
     const page = Math.max(Number(url.searchParams.get('page') ?? 1), 1);
     const pageSize = Math.min(Math.max(Number(url.searchParams.get('pageSize') ?? 25), 1), 100);
     const search = url.searchParams.get('search')?.trim().toLowerCase();
+    await ensureDistributorDefinitionsWithToken(shopDomain, accessToken);
     const all = await listMetaobjectLocations(shopDomain, accessToken);
     const filtered = search ? all.filter((location) => [location.name, location.city, location.addressLine1, location.postalCode, location.country].some((value) => String(value).toLowerCase().includes(search))) : all;
     const items = filtered.slice((page - 1) * pageSize, page * pageSize);
@@ -48,6 +50,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const {shopDomain, accessToken} = await authenticateShopifyRequest(request);
+    await ensureDistributorDefinitionsWithToken(shopDomain, accessToken);
     const input = locationSchema.parse(await request.json());
     const location = await upsertMetaobjectLocation(shopDomain, accessToken, input);
     return NextResponse.json({location, geocoded: input.latitude != null && input.longitude != null}, {status: 201});
