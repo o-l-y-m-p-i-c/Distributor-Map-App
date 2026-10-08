@@ -81,3 +81,9 @@
   margin: 0;
   transform: translateY(-50%);
 }
+
+.dm-locator__map,
+.dm-locator__map canvas {
+  touch-action: none !important;
+  overscroll-behavior: contain !important;
+}
