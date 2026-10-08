@@ -58,6 +58,35 @@
   </div>
 </section>
 
+<script type="application/json" data-dm-locator-snapshot>
+[
+  {% for location in metaobjects['$app:retail_location'].values %}
+    {
+      "id": {{ location.id | json }},
+      "name": {{ location.name.value | json }},
+      "addressLine1": {{ location.address_line_1.value | json }},
+      "city": {{ location.city.value | json }},
+      "state": {{ location.state.value | json }},
+      "postalCode": {{ location.postal_code.value | json }},
+      "country": {{ location.country.value | json }},
+      "countryCode": {{ location.country_code.value | json }},
+      "latitude": {{ location.latitude.value | json }},
+      "longitude": {{ location.longitude.value | json }},
+      "phones": {{ location.phones.value | json }},
+      "emails": {{ location.emails.value | json }},
+      "websites": {{ location.websites.value | json }},
+      "description": {{ location.description.value | json }},
+      "imageUrls": {{ location.image_urls.value | json }},
+      "buttonUrl": {{ location.button_url.value | json }},
+      "type": {{ location.type.value | json }},
+      "published": {{ location.published.value | json }},
+      "productIds": {{ location.product_ids.value | json }}
+    }{% unless forloop.last %},{% endunless %}
+  {% endfor %}
+]
+</script>
+
+
 <script type="application/json" data-dm-locator-translations>
   {
     "viewDetails": {{ 'store_locator.view_details' | t | json }},

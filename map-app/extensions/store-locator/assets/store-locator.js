@@ -39,6 +39,19 @@
     let translations = {};
     try { translations = JSON.parse(translationScript?.textContent || '{}'); } catch {}
     const translate = (key, fallback) => translations[key] || fallback;
+    const snapshotScript = root.parentElement?.querySelector('[data-dm-locator-snapshot]');
+    let snapshotLocations = null;
+    try {
+      const parsed = JSON.parse(snapshotScript?.textContent || 'null');
+      if (Array.isArray(parsed)) {
+        const parseArray = (value) => {
+          if (Array.isArray(value)) return value;
+          if (typeof value !== 'string') return [];
+          try { const result = JSON.parse(value); return Array.isArray(result) ? result : []; } catch { return value.split('|').filter(Boolean); }
+        };
+        snapshotLocations = parsed.map((location) => ({...location, latitude: location.latitude == null || location.latitude === '' ? null : Number(location.latitude), longitude: location.longitude == null || location.longitude === '' ? null : Number(location.longitude), phones: parseArray(location.phones), emails: parseArray(location.emails), websites: parseArray(location.websites), imageUrls: parseArray(location.imageUrls), productIds: parseArray(location.productIds)}));
+      }
+    } catch {}
     let map;
     let locations = [];
     const locationCache = new Map();
@@ -541,6 +554,29 @@
       status.textContent = translate('loading', 'Loading');
       empty.hidden = true;
       error.hidden = true;
+      if (snapshotLocations) {
+        const query = (params.get('q') || '').toLowerCase();
+        const latitude = params.get('latitude') == null ? null : Number(params.get('latitude'));
+        const longitude = params.get('longitude') == null ? null : Number(params.get('longitude'));
+        const radius = Number(params.get('radius') || 50);
+        const distanceKm = (location) => {
+          if (latitude == null || longitude == null || location.latitude == null || location.longitude == null) return null;
+          const radians = (value) => value * Math.PI / 180;
+          const a = Math.sin(radians(location.latitude - latitude) / 2) ** 2 + Math.cos(radians(latitude)) * Math.cos(radians(location.latitude)) * Math.sin(radians(location.longitude - longitude) / 2) ** 2;
+          return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        };
+        const local = snapshotLocations.map((location) => ({...location, distanceKilometers: distanceKm(location)})).filter((location) => {
+          const haystack = [location.name, location.addressLine1, location.city, location.postalCode, location.country, location.type].join(' ').toLowerCase();
+          return (!query || haystack.includes(query)) && (location.distanceKilometers == null || location.distanceKilometers <= radius);
+        }).sort((left, right) => (left.distanceKilometers ?? Number.MAX_SAFE_INTEGER) - (right.distanceKilometers ?? Number.MAX_SAFE_INTEGER));
+        if (sequence !== searchSequence) return;
+        locationCache.clear();
+        local.forEach((location) => locationCache.set(String(location.id), location));
+        render(local);
+        updateMap(local, latitude != null && longitude != null ? {latitude, longitude} : null);
+        status.textContent = '';
+        return;
+      }
       try {
         const response = await fetch(`${endpoint}?${params.toString()}`, {headers: {Accept: 'application/json'}});
         if (!response.ok) throw new Error('Search request failed');
