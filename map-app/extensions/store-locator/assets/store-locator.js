@@ -28,6 +28,8 @@
     const searchInput = form?.querySelector('input[name="q"]');
     const clearSearchButton = root.querySelector('[data-dm-clear-search]');
     const list = root.querySelector('[data-dm-list]');
+    const resultsPane = root.querySelector('.dm-locator__results');
+    const resultsScrollbar = root.querySelector('[data-dm-results-scrollbar]');
     const count = root.querySelector('[data-dm-count]');
     const status = root.querySelector('[data-dm-status]');
     const empty = root.querySelector('[data-dm-empty]');
@@ -67,6 +69,22 @@
     const photoMarkers = new Map();
 
     if (!form || !searchInput || !list || !count || !status || !empty || !error || !mapContainer || !endpoint) return;
+
+    const syncResultsScrollbar = () => {
+      const thumb = resultsScrollbar?.querySelector('span');
+      if (!resultsPane || !resultsScrollbar || !thumb) return;
+      const overflow = resultsPane.scrollHeight > resultsPane.clientHeight + 1;
+      resultsScrollbar.hidden = !overflow;
+      if (!overflow) return;
+      const ratio = resultsPane.clientHeight / resultsPane.scrollHeight;
+      const thumbSize = Math.max(ratio * 100, 12);
+      thumb.style.height = `${thumbSize}%`;
+      thumb.style.transform = `translateY(${(resultsPane.scrollTop / (resultsPane.scrollHeight - resultsPane.clientHeight)) * (100 - thumbSize)}%)`;
+    };
+
+    resultsPane?.addEventListener('scroll', syncResultsScrollbar, {passive: true});
+    if (typeof ResizeObserver !== 'undefined' && resultsPane) new ResizeObserver(syncResultsScrollbar).observe(resultsPane);
+    window.setTimeout(syncResultsScrollbar, 0);
 
     const normalizeThemeColor = (value) => {
       const color = String(value ?? '').trim();
