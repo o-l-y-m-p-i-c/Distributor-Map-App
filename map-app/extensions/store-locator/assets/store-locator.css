@@ -395,3 +395,25 @@
   background: #fff;
   color: var(--dm-primary, #176274);
 }
+
+.dm-locator__card .dm-locator__details {
+  display: inline-flex;
+  width: max-content;
+  max-width: 100%;
+  align-self: end;
+  justify-self: end;
+  margin-top: 7px;
+  padding: 5px 10px;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.dm-locator__card--compact .dm-locator__details {
+  flex: 0 0 auto;
+  margin-top: 0;
+}
+
+.dm-locator__card--photo-modern .dm-locator__details {
+  justify-self: end;
+  padding: 5px 11px;
+}
