@@ -4,6 +4,7 @@
   data-endpoint="/apps/distributor-map/search"
   data-dm-marker-style="{{ block.settings.marker_style }}"
   data-dm-card-style="{{ block.settings.location_card_style }}"
+  data-dm-body-style="{{ block.settings.widget_body_style }}"
   data-dm-marker-shape="{{ block.settings.photo_marker_shape }}"
   style="--dm-list-height-desktop: {{ block.settings.list_height_desktop }}px; --dm-list-height-mobile: {{ block.settings.list_height_mobile }}px; --dm-marker-size: {{ block.settings.marker_size }}px; --dm-marker-radius: {{ block.settings.photo_marker_shape }}; --dm-marker-border-color: {{ block.settings.photo_marker_border_color }}; --dm-marker-border-width: {{ block.settings.photo_marker_border_width }}px;"
   {{ block.shopify_attributes }}
@@ -114,6 +115,11 @@
       { "value": "default", "label": "Default" },
       { "value": "compact", "label": "Compact" },
       { "value": "photo", "label": "Photo card" }
+    ] },
+    { "type": "select", "id": "widget_body_style", "label": "Widget body style", "default": "default", "options": [
+      { "value": "default", "label": "Default" },
+      { "value": "borderless", "label": "Borderless" },
+      { "value": "soft", "label": "Soft card" }
     ] },
     { "type": "select", "id": "marker_style", "label": "Marker style", "default": "default", "options": [
       { "value": "default", "label": "Default marker" },

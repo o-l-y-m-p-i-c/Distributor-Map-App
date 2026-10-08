@@ -148,3 +148,15 @@
 .dm-locator__card--photo .dm-locator__details {
   margin-top: 5px;
 }
+
+.dm-locator[data-dm-body-style="borderless"] .dm-locator__body {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.dm-locator[data-dm-body-style="soft"] .dm-locator__body {
+  border: 1px solid color-mix(in srgb, var(--dm-line) 70%, transparent);
+  border-radius: 26px;
+  box-shadow: 0 14px 36px rgba(9, 38, 51, 0.1);
+}
