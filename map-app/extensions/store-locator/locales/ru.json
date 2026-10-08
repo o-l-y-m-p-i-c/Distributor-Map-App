@@ -1,7 +1,11 @@
 {
   "ratings": {
-    "stars": { "label": "Рейтинг" },
-    "home": { "recommendationText": "Рекомендуемый продукт!" }
+    "stars": {
+      "label": "Рейтинг"
+    },
+    "home": {
+      "recommendationText": "Рекомендуемый продукт!"
+    }
   },
   "store_locator": {
     "use_location": "Использовать моё местоположение",
@@ -25,6 +29,20 @@
     "navigation": "Навигация",
     "loading": "Загрузка…",
     "no_locations_area": "В этом районе локации не найдены.",
-    "map_unavailable": "Карта недоступна"
+    "map_unavailable": "Карта недоступна",
+    "clear_search": "Очистить поиск",
+    "show_all_locations": "Показать все локации"
+  },
+  "settings": {
+    "location_card_style": "Стиль карточки локации",
+    "widget_body_style": "Стиль корпуса виджета"
+  },
+  "options": {
+    "default": "По умолчанию",
+    "compact": "Компактный",
+    "photo_card": "Карточка с фото",
+    "photo_left": "Фото слева",
+    "borderless": "Без границ",
+    "soft_card": "Мягкая карточка"
   }
 }

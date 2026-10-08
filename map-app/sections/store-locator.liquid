@@ -41,7 +41,7 @@
     <label class="visually-hidden" for="dm-locator-query-{{ section.id }}">Search locations</label>
     <div class="dm-locator__search-field">
     <input id="dm-locator-query-{{ section.id }}" type="search" name="q" placeholder="{{ section.settings.search_placeholder | escape }}" autocomplete="off">
-    <button type="button" class="dm-locator__clear-search" data-dm-clear-search aria-label="Clear search" hidden>&#215;</button>
+    <button type="button" class="dm-locator__clear-search" data-dm-clear-search aria-label="{{ 'store_locator.clear_search' | t }}" hidden>&#215;</button>
     </div>
     <button type="submit">Search</button>
   </form>
@@ -103,6 +103,7 @@
 <script type="application/json" data-dm-locator-translations>
   {
     "viewDetails": {{ 'store_locator.view_details' | t | json }},
+    "showAllLocations": {{ 'store_locator.show_all_locations' | t | json }},
     "close": {{ 'store_locator.close' | t | json }},
     "chooseNavigation": {{ 'store_locator.choose_navigation' | t | json }},
     "automaticNavigation": {{ 'store_locator.automatic_navigation' | t | json }},
@@ -126,16 +127,16 @@
     { "type": "richtext", "id": "heading", "label": "Heading", "default": "<p>Find a distributor near you</p>" },
     { "type": "richtext", "id": "description", "label": "Description", "default": "<p>Search our retail network and discover where to find our products.</p>" },
     { "type": "text", "id": "search_placeholder", "label": "Search placeholder", "default": "Search by location name" },
-    { "type": "select", "id": "location_card_style", "label": "Location card style", "default": "default", "options": [
-      { "value": "default", "label": "Default" },
-      { "value": "compact", "label": "Compact" },
-      { "value": "photo", "label": "Photo card" },
-      { "value": "photo-left", "label": "Photo left" }
+    { "type": "select", "id": "location_card_style", "label": "t:settings.location_card_style", "default": "default", "options": [
+      { "value": "default", "label": "t:options.default" },
+      { "value": "compact", "label": "t:options.compact" },
+      { "value": "photo", "label": "t:options.photo_card" },
+      { "value": "photo-left", "label": "t:options.photo_left" }
     ] },
-    { "type": "select", "id": "widget_body_style", "label": "Widget body style", "default": "default", "options": [
-      { "value": "default", "label": "Default" },
-      { "value": "borderless", "label": "Borderless" },
-      { "value": "soft", "label": "Soft card" }
+    { "type": "select", "id": "widget_body_style", "label": "t:settings.widget_body_style", "default": "default", "options": [
+      { "value": "default", "label": "t:options.default" },
+      { "value": "borderless", "label": "t:options.borderless" },
+      { "value": "soft", "label": "t:options.soft_card" }
     ] },
     { "type": "select", "id": "marker_style", "label": "Marker style", "default": "default", "options": [
       { "value": "default", "label": "Default marker" },

@@ -638,7 +638,7 @@
         return;
       }
       viewportSearchActive = true;
-      searchAreaButton.textContent = 'Show all locations';
+      searchAreaButton.textContent = translate('showAllLocations', 'Show all locations');
       searchAreaButton.hidden = false;
       searchCurrentArea();
     });

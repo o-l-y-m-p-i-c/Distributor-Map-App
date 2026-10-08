@@ -1,7 +1,11 @@
 {
   "ratings": {
-    "stars": { "label": "Vērtējumi" },
-    "home": { "recommendationText": "Ieteicamais produkts!" }
+    "stars": {
+      "label": "Vērtējumi"
+    },
+    "home": {
+      "recommendationText": "Ieteicamais produkts!"
+    }
   },
   "store_locator": {
     "use_location": "Izmantot manu atrašanās vietu",
@@ -25,6 +29,20 @@
     "navigation": "Navigācija",
     "loading": "Ielādē…",
     "no_locations_area": "Šajā apgabalā atrašanās vietas nav atrastas.",
-    "map_unavailable": "Karte nav pieejama"
+    "map_unavailable": "Karte nav pieejama",
+    "clear_search": "Notīrīt meklēšanu",
+    "show_all_locations": "Rādīt visas atrašanās vietas"
+  },
+  "settings": {
+    "location_card_style": "Atrašanās vietas kartītes stils",
+    "widget_body_style": "Widget korpusa stils"
+  },
+  "options": {
+    "default": "Noklusējuma",
+    "compact": "Kompakts",
+    "photo_card": "Kartīte ar foto",
+    "photo_left": "Foto pa kreisi",
+    "borderless": "Bez apmales",
+    "soft_card": "Mīksta kartīte"
   }
 }

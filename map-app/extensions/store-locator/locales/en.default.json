@@ -29,6 +29,20 @@
     "navigation": "Navigation",
     "loading": "Loading",
     "no_locations_area": "No locations in this area.",
-    "map_unavailable": "Map unavailable"
+    "map_unavailable": "Map unavailable",
+    "clear_search": "Clear search",
+    "show_all_locations": "Show all locations"
+  },
+  "settings": {
+    "location_card_style": "Location card style",
+    "widget_body_style": "Widget body style"
+  },
+  "options": {
+    "default": "Default",
+    "compact": "Compact",
+    "photo_card": "Photo card",
+    "photo_left": "Photo left",
+    "borderless": "Borderless",
+    "soft_card": "Soft card"
   }
 }
