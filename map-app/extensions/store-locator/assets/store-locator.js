@@ -62,6 +62,7 @@
     let viewportSearchTimer = null;
     let searchSequence = 0;
     const markerStyle = root.dataset.dmMarkerStyle || 'default';
+    const cardStyle = root.dataset.dmCardStyle || 'default';
     const markerShape = root.dataset.dmMarkerShape || '50%';
     const photoMarkers = new Map();
 
@@ -383,11 +384,14 @@
 
     const renderList = (visible) => {
       list.innerHTML = visible.map((location) => `
-        <div class="dm-locator__card" role="button" tabindex="0" data-dm-location="${escapeHtml(location.id)}">
-          <strong>${escapeHtml(location.name)}</strong>
-          <address>${escapeHtml([location.addressLine1, location.city, location.country].filter(Boolean).join(', '))}</address>
-          ${location.distanceKilometers != null ? `<span class="dm-locator__distance">${Number(location.distanceKilometers).toFixed(1)} km away</span>` : ''}
-          <button type="button" class="dm-locator__details" data-dm-details="${escapeHtml(location.id)}">${translate('viewDetails', 'View details')}</button>
+        <div class="dm-locator__card dm-locator__card--${escapeHtml(cardStyle)}" role="button" tabindex="0" data-dm-location="${escapeHtml(location.id)}">
+          ${cardStyle === 'photo' && (location.imageUrls?.[0] || location.imageUrl) ? `<img class="dm-locator__card-image" src="${escapeHtml(location.imageUrls?.[0] || location.imageUrl)}" alt="${escapeHtml(location.name)}" loading="lazy">` : ''}
+          <div class="dm-locator__card-content">
+            <strong>${escapeHtml(location.name)}</strong>
+            <address>${escapeHtml([location.addressLine1, location.city, location.country].filter(Boolean).join(', '))}</address>
+            ${location.distanceKilometers != null ? `<span class="dm-locator__distance">${Number(location.distanceKilometers).toFixed(1)} km away</span>` : ''}
+            <button type="button" class="dm-locator__details" data-dm-details="${escapeHtml(location.id)}">${translate('viewDetails', 'View details')}</button>
+          </div>
         </div>
       `).join('');
       count.textContent = `${visible.length} ${visible.length === 1 ? 'location' : 'locations'}`;

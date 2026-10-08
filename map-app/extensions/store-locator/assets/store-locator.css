@@ -93,3 +93,58 @@
   touch-action: pan-y !important;
   overscroll-behavior: auto !important;
 }
+
+.dm-locator__card-content {
+  display: grid;
+  gap: 4px;
+}
+
+.dm-locator__card--compact {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 0;
+  margin-bottom: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+.dm-locator__card--compact strong {
+  margin: 0;
+  font-size: 13px;
+}
+
+.dm-locator__card--compact address {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  font-size: 11px;
+}
+
+.dm-locator__card--compact .dm-locator__distance,
+.dm-locator__card--compact .dm-locator__details {
+  margin-top: 4px;
+  font-size: 10px;
+}
+
+.dm-locator__card--photo {
+  overflow: hidden;
+  padding: 0;
+}
+
+.dm-locator__card--photo .dm-locator__card-image {
+  display: block;
+  width: 100%;
+  height: 128px;
+  object-fit: cover;
+  background: var(--dm-surface, #eef4f5);
+}
+
+.dm-locator__card--photo .dm-locator__card-content {
+  padding: 13px 15px 15px;
+}
+
+.dm-locator__card--photo .dm-locator__details {
+  margin-top: 5px;
+}
