@@ -19,7 +19,8 @@
     "shopify:deploy": "shopify app deploy",
     "migrate": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
-    "db:validate": "prisma validate"
+    "db:validate": "prisma validate",
+    "migrate:metaobjects": "tsx scripts/migrate-to-metaobjects.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
