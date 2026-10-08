@@ -241,3 +241,42 @@
   background: var(--dm-accent, #4ca9ba);
 }
 
+
+.dm-locator__card--minimal {
+  margin-bottom: 2px;
+  padding: 12px 2px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dm-locator__card--minimal:hover,
+.dm-locator__card--minimal.is-active {
+  border: 0;
+  background: color-mix(in srgb, var(--dm-primary) 8%, transparent);
+  box-shadow: none;
+}
+
+.dm-locator__card--minimal strong {
+  margin-bottom: 3px;
+  font-size: 14px;
+}
+
+.dm-locator__card--minimal address {
+  font-size: 11px;
+}
+
+.dm-locator__card--minimal .dm-locator__details {
+  margin-top: 7px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--dm-primary);
+  font-size: 11px;
+}
+
+.dm-locator__card--minimal .dm-locator__details:hover {
+  background: transparent;
+  color: var(--dm-accent);
+}
