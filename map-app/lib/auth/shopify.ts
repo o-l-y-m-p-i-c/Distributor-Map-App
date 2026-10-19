@@ -92,10 +92,15 @@ async function getShopifyShopId(shopDomain: string, accessToken: string) {
   return result.data.shop.id;
 }
 
-export async function authenticateAdminRequest(request: Request) {
+export async function authenticateShopifyRequest(request: Request) {
   const idToken = getBearerToken(request);
-  const { shopDomain, payload } = await verifyIdToken(idToken);
+  const {shopDomain, payload} = await verifyIdToken(idToken);
   const accessToken = await exchangeIdToken(shopDomain, idToken);
+  return {shopDomain, accessToken, shopifyUserId: payload.sub ?? null};
+}
+
+export async function authenticateAdminRequest(request: Request) {
+  const {shopDomain, accessToken, shopifyUserId} = await authenticateShopifyRequest(request);
   const shopifyShopId = await getShopifyShopId(shopDomain, accessToken);
 
   const shop = await prisma.shop.upsert({
@@ -111,5 +116,5 @@ export async function authenticateAdminRequest(request: Request) {
     },
   });
 
-  return { shop, shopifyUserId: payload.sub ?? null };
+  return { shop, shopifyUserId };
 }

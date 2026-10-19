@@ -31,11 +31,6 @@ export async function GET(request: Request) {
     const hasPartialBounds = [input.minLatitude, input.maxLatitude, input.minLongitude, input.maxLongitude].some((value) => value != null);
     if (hasPartialBounds && !hasBounds) return NextResponse.json({ error: 'All map bounds must be provided together' }, { status: 400 });
     if (hasBounds && (input.minLatitude! > input.maxLatitude! || input.minLongitude! > input.maxLongitude!)) return NextResponse.json({ error: 'Invalid map bounds' }, { status: 400 });
-    if (latitude == null && input.q) {
-      const result = await geocodeAddress(input.q);
-      if (result) ({ latitude, longitude } = result);
-    }
-
     const shop = await prisma.shop.findUnique({ where: { shopifyDomain: shopDomain }, select: { id: true } });
     if (!shop) return NextResponse.json({ items: [], total: 0 });
 
@@ -52,7 +47,7 @@ export async function GET(request: Request) {
         : null;
     const candidates = bounds
       ? await prisma.location.findMany({ where: { ...filters, latitude: { not: null, gte: bounds.minLatitude, lte: bounds.maxLatitude }, longitude: { not: null, gte: bounds.minLongitude, lte: bounds.maxLongitude } } })
-      : await prisma.location.findMany({ where: { ...filters, ...(input.q ? { OR: [{ name: { contains: input.q, mode: 'insensitive' } }, { addressLine1: { contains: input.q, mode: 'insensitive' } }, { addressLine2: { contains: input.q, mode: 'insensitive' } }, { city: { contains: input.q, mode: 'insensitive' } }, { postalCode: { contains: input.q, mode: 'insensitive' } }, { country: { contains: input.q, mode: 'insensitive' } }] } : {}) }, take: 100 });
+      : await prisma.location.findMany({ where: { ...filters, ...(input.q ? { name: { contains: input.q, mode: 'insensitive' } } : {}) }, take: 100 });
 
     const items = candidates.map((location) => {
       const distance = latitude != null && longitude != null && location.latitude != null && location.longitude != null

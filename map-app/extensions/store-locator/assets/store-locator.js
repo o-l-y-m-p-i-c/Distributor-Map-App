@@ -25,6 +25,8 @@
 
   roots.forEach((root) => {
     const form = root.querySelector('[data-dm-search]');
+    const searchInput = form?.querySelector('input[name="q"]');
+    const clearSearchButton = root.querySelector('[data-dm-clear-search]');
     const list = root.querySelector('[data-dm-list]');
     const count = root.querySelector('[data-dm-count]');
     const status = root.querySelector('[data-dm-status]');
@@ -39,6 +41,19 @@
     let translations = {};
     try { translations = JSON.parse(translationScript?.textContent || '{}'); } catch {}
     const translate = (key, fallback) => translations[key] || fallback;
+    const snapshotScript = root.parentElement?.querySelector('[data-dm-locator-snapshot]');
+    let snapshotLocations = null;
+    try {
+      const parsed = JSON.parse(snapshotScript?.textContent || 'null');
+      if (Array.isArray(parsed)) {
+        const parseArray = (value) => {
+          if (Array.isArray(value)) return value;
+          if (typeof value !== 'string') return [];
+          try { const result = JSON.parse(value); return Array.isArray(result) ? result : []; } catch { return value.split('|').filter(Boolean); }
+        };
+        snapshotLocations = parsed.map((location) => ({...location, latitude: location.latitude == null || location.latitude === '' ? null : Number(location.latitude), longitude: location.longitude == null || location.longitude === '' ? null : Number(location.longitude), phones: parseArray(location.phones), emails: parseArray(location.emails), websites: parseArray(location.websites), imageUrls: parseArray(location.imageUrls), productIds: parseArray(location.productIds)}));
+      }
+    } catch {}
     let map;
     let locations = [];
     const locationCache = new Map();
@@ -47,11 +62,11 @@
     let viewportSearchTimer = null;
     let searchSequence = 0;
     const markerStyle = root.dataset.dmMarkerStyle || 'default';
+    const cardStyle = root.dataset.dmCardStyle || 'default';
     const markerShape = root.dataset.dmMarkerShape || '50%';
     const photoMarkers = new Map();
 
-    if (!form || !list || !count || !status || !empty || !error || !mapContainer || !endpoint) return;
-
+    if (!form || !searchInput || !list || !count || !status || !empty || !error || !mapContainer || !endpoint) return;
     const normalizeThemeColor = (value) => {
       const color = String(value ?? '').trim();
       if (!color) return '';
@@ -368,14 +383,17 @@
 
     const renderList = (visible) => {
       list.innerHTML = visible.map((location) => `
-        <div class="dm-locator__card" role="button" tabindex="0" data-dm-location="${escapeHtml(location.id)}">
-          <strong>${escapeHtml(location.name)}</strong>
-          <address>${escapeHtml([location.addressLine1, location.city, location.country].filter(Boolean).join(', '))}</address>
-          ${location.distanceKilometers != null ? `<span class="dm-locator__distance">${Number(location.distanceKilometers).toFixed(1)} km away</span>` : ''}
-          <button type="button" class="dm-locator__details" data-dm-details="${escapeHtml(location.id)}">${translate('viewDetails', 'View details')}</button>
+        <div class="dm-locator__card dm-locator__card--${escapeHtml(cardStyle)}${['photo', 'photo-left', 'photo-modern'].includes(cardStyle) && (location.imageUrls?.[0] || location.imageUrl) ? ' dm-locator__card--has-image' : ''}" role="button" tabindex="0" data-dm-location="${escapeHtml(location.id)}">
+          ${['photo', 'photo-left', 'photo-modern'].includes(cardStyle) && (location.imageUrls?.[0] || location.imageUrl) ? `<img class="dm-locator__card-image" src="${escapeHtml(location.imageUrls?.[0] || location.imageUrl)}" alt="${escapeHtml(location.name)}" loading="lazy">` : ''}
+          <div class="dm-locator__card-content">
+            <strong>${escapeHtml(location.name)}</strong>
+            <address>${escapeHtml([location.addressLine1, location.city, location.country].filter(Boolean).join(', '))}</address>
+            ${location.distanceKilometers != null ? `<span class="dm-locator__distance">${Number(location.distanceKilometers).toFixed(1)} km away</span>` : ''}
+            <button type="button" class="dm-locator__details" data-dm-details="${escapeHtml(location.id)}">${translate('viewDetails', 'View details')}</button>
+          </div>
         </div>
       `).join('');
-      count.textContent = `${visible.length} ${visible.length === 1 ? 'location' : 'locations'}`;
+      count.textContent = `${visible.length} ${visible.length === 1 ? translate('location', 'location') : translate('locations', 'locations')}`;
       empty.hidden = visible.length > 0;
       list.querySelectorAll('[data-dm-location]').forEach((card) => {
         card.addEventListener('click', () => selectLocation(card.dataset.dmLocation));
@@ -475,6 +493,12 @@
 
     const initializeMap = async () => {
       try {
+        const isolateQualifiedGesture = (event) => {
+          if (event.type === 'wheel' && (event.ctrlKey || event.metaKey)) event.stopPropagation();
+          if (event.type === 'touchmove' && event.touches?.length > 1) event.stopPropagation();
+        };
+        mapContainer.addEventListener('wheel', isolateQualifiedGesture, {passive: true});
+        mapContainer.addEventListener('touchmove', isolateQualifiedGesture, {passive: true});
         const maplibregl = await loadMapLibre();
         map = new maplibregl.Map({container: mapContainer, style: 'https://tiles.openfreemap.org/styles/liberty', center: [0, 20], zoom: 1.5, attributionControl: true, cooperativeGestures: true});
         map.addControl(new maplibregl.NavigationControl(), 'top-right');
@@ -508,6 +532,7 @@
               if (viewportSearchTimer) clearTimeout(viewportSearchTimer);
               viewportSearchTimer = setTimeout(searchCurrentArea, 300);
             } else if (searchAreaButton) {
+              searchAreaButton.textContent = translate('searchArea', 'Search this area');
               searchAreaButton.hidden = false;
             }
           });
@@ -536,11 +561,50 @@
       }
     };
 
+    const updateClearSearchButton = () => {
+      if (clearSearchButton) clearSearchButton.hidden = !searchInput.value;
+    };
+
+    clearSearchButton?.addEventListener('click', () => {
+      searchInput.value = '';
+      updateClearSearchButton();
+      search(new URLSearchParams());
+      searchInput.focus();
+    });
+
+    searchInput.addEventListener('input', () => {
+      updateClearSearchButton();
+      if (!searchInput.value.trim()) search(new URLSearchParams());
+    });
+
     const search = async (params = new URLSearchParams()) => {
       const sequence = ++searchSequence;
       status.textContent = translate('loading', 'Loading');
       empty.hidden = true;
       error.hidden = true;
+      if (snapshotLocations) {
+        const query = (params.get('q') || '').toLowerCase();
+        const latitude = params.get('latitude') == null ? null : Number(params.get('latitude'));
+        const longitude = params.get('longitude') == null ? null : Number(params.get('longitude'));
+        const radius = Number(params.get('radius') || 50);
+        const distanceKm = (location) => {
+          if (latitude == null || longitude == null || location.latitude == null || location.longitude == null) return null;
+          const radians = (value) => value * Math.PI / 180;
+          const a = Math.sin(radians(location.latitude - latitude) / 2) ** 2 + Math.cos(radians(latitude)) * Math.cos(radians(location.latitude)) * Math.sin(radians(location.longitude - longitude) / 2) ** 2;
+          return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        };
+        const local = snapshotLocations.map((location) => ({...location, distanceKilometers: distanceKm(location)})).filter((location) => {
+          const haystack = String(location.name || '').toLowerCase();
+          return (!query || haystack.includes(query)) && (location.distanceKilometers == null || location.distanceKilometers <= radius);
+        }).sort((left, right) => (left.distanceKilometers ?? Number.MAX_SAFE_INTEGER) - (right.distanceKilometers ?? Number.MAX_SAFE_INTEGER));
+        if (sequence !== searchSequence) return;
+        locationCache.clear();
+        local.forEach((location) => locationCache.set(String(location.id), location));
+        render(local);
+        updateMap(local, latitude != null && longitude != null ? {latitude, longitude} : null);
+        status.textContent = '';
+        return;
+      }
       try {
         const response = await fetch(`${endpoint}?${params.toString()}`, {headers: {Accept: 'application/json'}});
         if (!response.ok) throw new Error('Search request failed');
@@ -567,8 +631,15 @@
     };
 
     searchAreaButton?.addEventListener('click', () => {
+      if (viewportSearchActive) {
+        viewportSearchActive = false;
+        searchAreaButton.hidden = true;
+        search(new URLSearchParams(new FormData(form)));
+        return;
+      }
       viewportSearchActive = true;
-      searchAreaButton.hidden = true;
+      searchAreaButton.textContent = translate('showAllLocations', 'Show all locations');
+      searchAreaButton.hidden = false;
       searchCurrentArea();
     });
 

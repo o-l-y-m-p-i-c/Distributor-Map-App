@@ -1,96 +1,58 @@
-import { NextResponse } from 'next/server';
-import { z } from 'zod';
-import { authenticateAdminRequest } from '@/lib/auth/shopify';
-import { geocodeAddress } from '@/lib/geo/geocode';
-import { prisma } from '@/lib/db/client';
+import {NextResponse} from 'next/server';
+import {z} from 'zod';
+import {authenticateShopifyRequest, ShopifyAuthenticationError} from '@/lib/auth/shopify';
+import {deleteMetaobjectLocation, findMetaobjectLocation, upsertMetaobjectLocation} from '@/lib/shopify/location-metaobjects';
 
-const locationUpdateSchema = z.object({
+const updateSchema = z.object({
   name: z.string().trim().min(1).max(160).optional(),
-  slug: z.string().trim().min(1).max(180).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
   addressLine1: z.string().trim().min(1).max(200).optional(),
-  addressLine2: z.string().trim().max(200).nullable().optional(),
   city: z.string().trim().min(1).max(120).optional(),
-  state: z.string().trim().max(120).nullable().optional(),
   postalCode: z.string().trim().min(1).max(40).optional(),
   country: z.string().trim().min(1).max(120).optional(),
   countryCode: z.string().trim().length(2).toUpperCase().optional(),
-  latitude: z.number().min(-90).max(90).nullable().optional(),
-  longitude: z.number().min(-180).max(180).nullable().optional(),
-  phones: z.array(z.string().trim().min(1).max(60)).max(20).optional(),
-  emails: z.array(z.string().trim().min(1).max(254)).max(20).optional(),
-  websites: z.array(z.string().trim().min(1).max(2048)).max(20).optional(),
   description: z.string().trim().max(5000).nullable().optional(),
-  imageUrls: z.array(z.string().trim().min(1).max(2048)).max(50).optional(),
-  buttonUrl: z.string().trim().max(2048).nullable().optional(),
-  customValues: z.record(z.string(), z.string().trim().max(2000)).optional(),
   type: z.string().trim().min(1).max(80).optional(),
   published: z.boolean().optional(),
+  latitude: z.number().min(-90).max(90).nullable().optional(),
+  longitude: z.number().min(-180).max(180).nullable().optional(),
 });
 
-type RouteContext = { params: Promise<{ id: string }> };
+type RouteContext = {params: Promise<{id: string}>};
 
-function errorResponse(message: string, status: number) {
-  return NextResponse.json({ error: message }, { status });
-}
-
-export async function GET(request: Request, { params }: RouteContext) {
+export async function GET(request: Request, {params}: RouteContext) {
   try {
-    const { shop } = await authenticateAdminRequest(request);
-    const { id } = await params;
-    const location = await prisma.location.findFirst({ where: { id, shopId: shop.id }, include: { openingHours: true, tagRelations: { include: { tag: true } }, products: true } });
-    if (!location) return errorResponse('Location not found', 404);
-    return NextResponse.json({ location });
+    const {shopDomain, accessToken} = await authenticateShopifyRequest(request);
+    const location = await findMetaobjectLocation(shopDomain, accessToken, (await params).id);
+    return location ? NextResponse.json({location}) : NextResponse.json({error: 'Location not found'}, {status: 404});
   } catch (error) {
-    console.error('Admin location GET failed', error);
-    return errorResponse('Unable to authenticate or load location', 401);
+    return NextResponse.json({error: error instanceof Error ? error.message : 'Unable to load location'}, {status: error instanceof ShopifyAuthenticationError ? 401 : 500});
   }
 }
 
-export async function PUT(request: Request, { params }: RouteContext) {
+export async function PUT(request: Request, {params}: RouteContext) {
   try {
-    const { shop } = await authenticateAdminRequest(request);
-    const { id } = await params;
-    const input = locationUpdateSchema.parse(await request.json());
-    const existing = await prisma.location.findFirst({ where: { id, shopId: shop.id }, select: { id: true } });
-    if (!existing) return errorResponse('Location not found', 404);
-    const data = {
-      ...input,
-      ...(input.phones !== undefined ? { phone: input.phones[0] ?? null } : {}),
-      ...(input.emails !== undefined ? { email: input.emails[0] ?? null } : {}),
-      ...(input.websites !== undefined ? { website: input.websites[0] ?? null } : {}),
-      ...(input.latitude !== undefined || input.longitude !== undefined ? { coordinatesSource: 'manual' } : {}),
-    };
-    let location = await prisma.location.update({ where: { id }, data });
-
-    if (location.latitude == null || location.longitude == null) {
-      const address = [location.addressLine1, location.addressLine2, location.city, location.state, location.postalCode, location.country].filter(Boolean).join(', ');
-      try {
-        const geocoded = await geocodeAddress(address);
-        if (geocoded) {
-          location = await prisma.location.update({ where: { id }, data: { latitude: geocoded.latitude, longitude: geocoded.longitude, coordinatesSource: 'geocoded' } });
-        }
-      } catch (geocodeError) {
-        console.error('Location geocoding failed after update', geocodeError);
-      }
-    }
-
-    return NextResponse.json({ location });
+    const {shopDomain, accessToken} = await authenticateShopifyRequest(request);
+    const id = (await params).id;
+    const existing = await findMetaobjectLocation(shopDomain, accessToken, id);
+    if (!existing) return NextResponse.json({error: 'Location not found'}, {status: 404});
+    const input = updateSchema.parse(await request.json());
+    const location = await upsertMetaobjectLocation(shopDomain, accessToken, {...existing, ...input, slug: existing.slug});
+    return NextResponse.json({location});
   } catch (error) {
-    if (error instanceof z.ZodError) return errorResponse('Invalid location data', 400);
-    console.error('Admin location PUT failed', error);
-    return errorResponse('Unable to authenticate or update location', 401);
+    if (error instanceof z.ZodError) return NextResponse.json({error: 'Invalid location data'}, {status: 400});
+    return NextResponse.json({error: error instanceof Error ? error.message : 'Unable to update location'}, {status: error instanceof ShopifyAuthenticationError ? 401 : 500});
   }
 }
 
-export async function DELETE(request: Request, { params }: RouteContext) {
+export async function DELETE(request: Request, {params}: RouteContext) {
   try {
-    const { shop } = await authenticateAdminRequest(request);
-    const { id } = await params;
-    const deleted = await prisma.location.deleteMany({ where: { id, shopId: shop.id } });
-    if (!deleted.count) return errorResponse('Location not found', 404);
-    return new NextResponse(null, { status: 204 });
+    const {shopDomain, accessToken} = await authenticateShopifyRequest(request);
+    const id = (await params).id;
+    const existing = await findMetaobjectLocation(shopDomain, accessToken, id);
+    if (!existing) return NextResponse.json({error: 'Location not found'}, {status: 404});
+    await deleteMetaobjectLocation(shopDomain, accessToken, id);
+    return new NextResponse(null, {status: 204});
   } catch (error) {
-    console.error('Admin location DELETE failed', error);
-    return errorResponse('Unable to authenticate or delete location', 401);
+    return NextResponse.json({error: error instanceof Error ? error.message : 'Unable to delete location'}, {status: error instanceof ShopifyAuthenticationError ? 401 : 500});
   }
 }

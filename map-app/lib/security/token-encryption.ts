@@ -1,4 +1,4 @@
-import {createCipheriv, createHash, randomBytes} from 'node:crypto';
+import {createCipheriv, createDecipheriv, createHash, randomBytes} from 'node:crypto';
 import {getEnv} from '@/lib/config/env';
 
 const algorithm = 'aes-256-gcm';
@@ -19,4 +19,13 @@ export function encryptAccessToken(value: string) {
     tag.toString('base64url'),
     encrypted.toString('base64url'),
   ].join('.');
+}
+
+
+export function decryptAccessToken(value: string) {
+  const [version, ivEncoded, tagEncoded, encryptedEncoded] = value.split('.');
+  if (version !== 'v1' || !ivEncoded || !tagEncoded || !encryptedEncoded) throw new Error('Invalid encrypted access token');
+  const decipher = createDecipheriv(algorithm, getKey(), Buffer.from(ivEncoded, 'base64url'));
+  decipher.setAuthTag(Buffer.from(tagEncoded, 'base64url'));
+  return Buffer.concat([decipher.update(Buffer.from(encryptedEncoded, 'base64url')), decipher.final()]).toString('utf8');
 }

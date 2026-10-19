@@ -15,6 +15,8 @@
   data-dm-locator
   data-endpoint="/apps/distributor-map/search"
   data-dm-marker-style="{{ section.settings.marker_style }}"
+  data-dm-card-style="{{ section.settings.location_card_style }}"
+  data-dm-body-style="{{ section.settings.widget_body_style }}"
   data-dm-marker-shape="{{ section.settings.photo_marker_shape }}"
   style="--dm-list-height-desktop: {{ section.settings.list_height_desktop }}px; --dm-list-height-mobile: {{ section.settings.list_height_mobile }}px; --dm-marker-size: {{ section.settings.marker_size }}px; --dm-marker-radius: {{ section.settings.photo_marker_shape }}; --dm-marker-border-color: {{ section.settings.photo_marker_border_color }}; --dm-marker-border-width: {{ section.settings.photo_marker_border_width }}px;"
 >
@@ -33,22 +35,14 @@
       {% endif %}
     </div>
 
-    {% if section.settings.enable_geolocation %}
-      <button type="button" class="dm-locator__locate" data-dm-locate>
-        Use my location
-      </button>
-    {% endif %}
   </div>
 
   <form class="dm-locator__search" data-dm-search>
     <label class="visually-hidden" for="dm-locator-query-{{ section.id }}">Search locations</label>
+    <div class="dm-locator__search-field">
     <input id="dm-locator-query-{{ section.id }}" type="search" name="q" placeholder="{{ section.settings.search_placeholder | escape }}" autocomplete="off">
-    <select name="radius" aria-label="Search radius">
-      <option value="20">20 km</option>
-      <option value="50" selected>50 km</option>
-      <option value="100">100 km</option>
-      <option value="200">200 km</option>
-    </select>
+    <button type="button" class="dm-locator__clear-search" data-dm-clear-search aria-label="{{ 'store_locator.clear_search' | t }}" hidden>&#215;</button>
+    </div>
     <button type="submit">Search</button>
   </form>
 
@@ -74,9 +68,42 @@
   </div>
 </section>
 
+<script type="application/json" data-dm-locator-snapshot>
+[
+  {% for location in metaobjects['app--427145920513--distributor_location_v2'].values %}
+    {
+      "id": {{ forloop.index0 | json }},
+      "externalId": {{ location.external_id.value | default: location.handle | default: location.id | json }},
+      "metaobjectId": {{ location.id | json }},
+      "handle": {{ location.handle | json }},
+      "name": {{ location.name.value | json }},
+      "addressLine1": {{ location.address_line_1.value | json }},
+      "city": {{ location.city.value | json }},
+      "state": {{ location.state.value | json }},
+      "postalCode": {{ location.postal_code.value | json }},
+      "country": {{ location.country.value | json }},
+      "countryCode": {{ location.country_code.value | json }},
+      "latitude": {{ location.latitude.value | json }},
+      "longitude": {{ location.longitude.value | json }},
+      "phones": {{ location.phones.value | json }},
+      "emails": {{ location.emails.value | json }},
+      "websites": {{ location.websites.value | json }},
+      "description": {{ location.description.value | json }},
+      "imageUrls": {{ location.image_urls.value | json }},
+      "buttonUrl": {{ location.button_url.value | json }},
+      "type": {{ location.type.value | json }},
+      "published": {{ location.published.value | json }},
+      "productIds": {{ location.product_ids.value | json }}
+    }{% unless forloop.last %},{% endunless %}
+  {% endfor %}
+]
+</script>
+
+
 <script type="application/json" data-dm-locator-translations>
   {
     "viewDetails": {{ 'store_locator.view_details' | t | json }},
+    "showAllLocations": {{ 'store_locator.show_all_locations' | t | json }},
     "close": {{ 'store_locator.close' | t | json }},
     "chooseNavigation": {{ 'store_locator.choose_navigation' | t | json }},
     "automaticNavigation": {{ 'store_locator.automatic_navigation' | t | json }},
@@ -98,9 +125,21 @@
     { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-1" },
     { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "FIND US" },
     { "type": "richtext", "id": "heading", "label": "Heading", "default": "<p>Find a distributor near you</p>" },
-    { "type": "richtext", "id": "description", "label": "Description", "default": "<p>Search our retail network and discover where to find PickAqua.</p>" },
-    { "type": "text", "id": "search_placeholder", "label": "Search placeholder", "default": "Store name, city, postcode, or address" },
-    { "type": "checkbox", "id": "enable_geolocation", "label": "Show use location button", "default": true },
+    { "type": "richtext", "id": "description", "label": "Description", "default": "<p>Search our retail network and discover where to find our products.</p>" },
+    { "type": "text", "id": "search_placeholder", "label": "Search placeholder", "default": "Search by location name" },
+    { "type": "select", "id": "location_card_style", "label": "t:settings.location_card_style", "default": "default", "options": [
+      { "value": "default", "label": "t:options.default" },
+      { "value": "compact", "label": "t:options.compact" },
+      { "value": "photo", "label": "t:options.photo_card" },
+      { "value": "photo-left", "label": "t:options.photo_left" },
+      { "value": "minimal", "label": "t:options.minimal" },
+      { "value": "photo-modern", "label": "t:options.photo_modern" }
+    ] },
+    { "type": "select", "id": "widget_body_style", "label": "t:settings.widget_body_style", "default": "default", "options": [
+      { "value": "default", "label": "t:options.default" },
+      { "value": "borderless", "label": "t:options.borderless" },
+      { "value": "soft", "label": "t:options.soft_card" }
+    ] },
     { "type": "select", "id": "marker_style", "label": "Marker style", "default": "default", "options": [
       { "value": "default", "label": "Default marker" },
       { "value": "photo", "label": "Photo marker" }
